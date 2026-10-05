@@ -1,5 +1,3 @@
-"""Каждая проверка на синтетических страницах с дозированными дефектами."""
-
 import pytest
 
 from ocr_quality.checks import ALL_CHECKS
@@ -22,9 +20,6 @@ from synthetic import (
 
 def run(name: str, image) -> CheckResult:
     return ALL_CHECKS[name].run(prepare_page(image))
-
-
-# --- общее -------------------------------------------------------------------------
 
 
 def test_all_checks_pass_on_clean_page(clean_page):
@@ -66,9 +61,6 @@ def test_page_preparation_finds_text(clean_page):
     assert prepare_page(speckle(blank_page(), 0.005)).char_count == 0
 
 
-# --- blur -------------------------------------------------------------------------
-
-
 def test_blur_score_drops_as_blur_grows(clean_page):
     scores = [run("blur", blur(clean_page, sigma)).score for sigma in (0, 1.0, 1.5, 2.5)]
     assert scores == sorted(scores, reverse=True)
@@ -89,9 +81,6 @@ def test_partially_blurred_page_fails(clean_page):
     assert 0.3 < result.details["blurred_text_ratio"] < 0.7
 
 
-# --- skew -------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("angle", [-15.0, -7.0, -2.5, 0.0, 2.5, 7.0, 15.0])
 def test_skew_angle_is_found(clean_page, angle):
     assert run("skew", rotate(clean_page, angle)).value == pytest.approx(angle, abs=0.5)
@@ -100,9 +89,6 @@ def test_skew_angle_is_found(clean_page, angle):
 @pytest.mark.parametrize(("angle", "status"), [(3, "passed"), (7, "failed"), (-12, "failed")])
 def test_skew_limit(clean_page, angle, status):
     assert run("skew", rotate(clean_page, angle)).status == status
-
-
-# --- contrast и exposure ------------------------------------------------------------
 
 
 def test_contrast_drops_as_ink_fades(clean_page):
@@ -117,17 +103,11 @@ def test_exposure_detects_dark_and_washed_out_pages(clean_page):
     assert "washed out" in run("exposure", fade(clean_page, 230)).message
 
 
-# --- noise ------------------------------------------------------------------------
-
-
 def test_noise_grows_with_specks(clean_page):
     values = [run("noise", speckle(clean_page, d)).value for d in (0.0, 0.002, 0.01, 0.03)]
     assert values == sorted(values)
     assert run("noise", speckle(clean_page, 0.03)).status == "failed"
     assert run("noise", gaussian_noise(clean_page, 20)).status == "failed"
-
-
-# --- resolution -------------------------------------------------------------------
 
 
 def test_resolution_reports_height_in_original_pixels():
@@ -143,9 +123,6 @@ def test_resolution_reports_height_in_original_pixels():
 def test_low_resolution_and_tiny_images_fail(clean_page):
     assert run("resolution", downscale(clean_page, 0.25)).status == "failed"
     assert "too small" in run("resolution", make_page(width=200, height=150, lines=3)).message
-
-
-# --- text presence ----------------------------------------------------------------
 
 
 def test_text_presence(clean_page):

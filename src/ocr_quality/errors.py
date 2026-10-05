@@ -47,12 +47,6 @@ class ServiceBusyError(ServiceError):
     status_code = 503
 
 
-class AnalysisTimeoutError(ServiceError):
-    """Анализ не уложился в отведённое время."""
-
-    status_code = 504
-
-
 class WorkerCrashedError(ServiceError):
     """Процесс-воркер упал во время анализа (пул процессов создан заново)."""
 

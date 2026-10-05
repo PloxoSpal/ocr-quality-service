@@ -65,7 +65,7 @@ curl -s -F file=@$D/images/image_012.png localhost:8000/analyze | jq '{suitable_
 # Повёрнутая страница - непригодна: "skew: text is rotated by -13.4°"
 curl -s -F file=@$D/images/image_002.jpg localhost:8000/analyze | jq '{suitable_for_ocr, issues}'
 
-# Только некоторые проверки: через запятую или повтором поля
+# Только некоторые проверки, через запятую
 curl -s -F file=@$D/images/image_047.png -F checks=blur,skew localhost:8000/analyze | jq '.checks | keys'
 
 # PDF: итог по каждой странице и по документу
@@ -124,7 +124,6 @@ uv run python scripts/benchmark.py http --env MAX_REQUESTS=12    # перегр�
 |---|---|---|
 | `WORKERS` | число ядер | сколько процессов параллельно считают проверки |
 | `MAX_REQUESTS` | `4 × workers` | сколько запросов одновременно пускать в сервис; остальным 503 |
-| `REQUEST_TIMEOUT_S` | `120` | время на анализ одного запроса, иначе 504 |
 | `MAX_UPLOAD_MB` | `50` | максимальный размер файла, иначе 413 |
 | `LOG_LEVEL` | `INFO` | уровень логирования |
 | `OCRQ_DATASET_DIR` | `eval/dataset` | путь к набору данных для тестов |
@@ -137,7 +136,6 @@ uv run python scripts/benchmark.py http --env MAX_REQUESTS=12    # перегр�
 |---|---|
 | `503 Service is busy` | Сервис занят: внутри уже `MAX_REQUESTS` запросов. Клиенту нужно повторить запрос позже. Сервису — увеличить `WORKERS` или `MAX_REQUESTS`, либо добавить реплики |
 | `413 ... too large` | Файл больше `MAX_UPLOAD_MB`, картинка больше 60 Мп или в PDF больше 200 страниц |
-| `504 Analysis did not finish` | Анализ дольше `REQUEST_TIMEOUT_S` (очень большой PDF) |
 | Первый запуск 1–3 с | Сервис заранее запускает процессы-воркеры, это один раз при старте |
 | Тесты на наборе данных `skipped` | Набор не найден: задайте `OCRQ_DATASET_DIR` |
 | `Address already in use` | Порт занят: `make run PORT=8001` |

@@ -5,14 +5,17 @@ import cv2
 import numpy as np
 
 from ocr_quality.checks import ALL_CHECKS
-from ocr_quality.files import open_pdf, read_image, read_pdf_page
+from ocr_quality.files import is_pdf, open_pdf, read_image, read_image_info, read_pdf_page
 from ocr_quality.page import prepare_page
 from ocr_quality.schemas import (
     CheckResult,
     DocumentResult,
     DocumentSummary,
+    ImageAnalysis,
+    InputInfo,
     PageResult,
     PageTimings,
+    PdfAnalysis,
 )
 
 MIN_QUALITY_SCORE = 0.6  # страница пригодна, только если итоговая оценка не ниже
@@ -26,6 +29,41 @@ def init_worker() -> None:
     поэтому внутренние потоки OpenCV отключаем - иначе ядра перегружаются.
     """
     cv2.setNumThreads(1)
+
+
+def analyze_file(data: bytes, check_names: list[str]) -> ImageAnalysis | PdfAnalysis:
+    """Проанализировать изображение или PDF и собрать ответ API.
+
+    Выполняется в процессе-воркере. Тип файла определяется по содержимому, а не по имени.
+    """
+    if is_pdf(data):
+        pages = analyze_pdf(data, check_names)
+        document = summarize_document(pages)
+        return PdfAnalysis(
+            input=InputInfo(type="pdf", format="PDF", size_bytes=len(data), page_count=len(pages)),
+            suitable_for_ocr=document.suitable_for_ocr,
+            quality_score=document.quality_score,
+            issues=document.issues,
+            summary=document.summary,
+            pages=pages,
+        )
+
+    info = read_image_info(data)
+    page = analyze_image(data, check_names)
+    return ImageAnalysis(
+        input=InputInfo(
+            type="image",
+            format=info.format,
+            size_bytes=len(data),
+            width=info.width,
+            height=info.height,
+        ),
+        suitable_for_ocr=page.suitable_for_ocr,
+        quality_score=page.quality_score,
+        issues=page.issues,
+        checks=page.checks,
+        timings=page.timings,
+    )
 
 
 def analyze_image(data: bytes, check_names: list[str]) -> PageResult:

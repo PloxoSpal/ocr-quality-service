@@ -43,12 +43,11 @@ class Page:
     original_width: int
     original_height: int
 
-    ink_mask: np.ndarray  # 255 - чернила (пиксель темнее окружения)
     blobs: np.ndarray  # все пятна чернил: строки [x, y, ширина, высота, площадь]
     blob_centers: np.ndarray  # центры пятен: строки [x, y]
 
     text_mask: np.ndarray  # 255 - пиксели символов текста
-    char_boxes: np.ndarray  # символы текста: строки [x, y, ширина, высота]
+    char_count: int  # сколько символов текста найдено
     char_centers: np.ndarray  # центры символов: строки [x, y]
     char_height: float  # типичная высота символа (0, если текста нет)
     line_count: int
@@ -62,11 +61,6 @@ class Page:
     paper_level: float  # яркость бумаги рядом с текстом (nan, если текста нет)
 
     prepare_ms: float  # сколько заняла подготовка
-
-    @property
-    def char_count(self) -> int:
-        """Сколько символов текста найдено."""
-        return len(self.char_boxes)
 
 
 def prepare_page(gray: np.ndarray) -> Page:
@@ -119,11 +113,10 @@ def prepare_page(gray: np.ndarray) -> Page:
         scale=scale,
         original_width=original_width,
         original_height=original_height,
-        ink_mask=ink_mask,
         blobs=stats[1:],  # строка 0 - фон, она не нужна
         blob_centers=centers[1:],
         text_mask=text.mask,
-        char_boxes=text.boxes,
+        char_count=text.char_count,
         char_centers=text.centers,
         char_height=text.char_height,
         line_count=text.line_count,
@@ -142,7 +135,7 @@ class Text:
     """Найденный текст."""
 
     mask: np.ndarray
-    boxes: np.ndarray
+    char_count: int
     centers: np.ndarray
     char_height: float
     line_count: int
@@ -162,7 +155,7 @@ def find_text(
     height, width = shape
     no_text = Text(
         mask=np.zeros(shape, np.uint8),
-        boxes=np.empty((0, 4), np.int32),
+        char_count=0,
         centers=np.empty((0, 2)),
         char_height=0.0,
         line_count=0,
@@ -219,7 +212,7 @@ def find_text(
     boxes = stats[text_labels, :4].astype(np.int32)
     return Text(
         mask=np.where(is_text[labels], 255, 0).astype(np.uint8),
-        boxes=boxes,
+        char_count=len(text_labels),
         centers=centers[text_labels],
         char_height=single_glyph_height(boxes),
         line_count=int(real_lines.sum()),

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 
 from ocr_quality.checks import ALL_CHECKS
-from ocr_quality.errors import FileTooLargeError
+from ocr_quality.config import settings
+from ocr_quality.errors import FileTooLargeError, InvalidRequestError
 from ocr_quality.schemas import ChecksList, Health, ImageAnalysis, PdfAnalysis
 from ocr_quality.services import AnalysisService
 
@@ -22,12 +23,8 @@ async def list_checks() -> ChecksList:
 @router.post("/analyze", response_model=ImageAnalysis | PdfAnalysis)
 async def analyze(
     file: UploadFile = File(description="Изображение (PNG, JPEG, WebP, TIFF, BMP) или PDF"),
-    checks: list[str] | None = Form(
-        None,
-        description="Какие проверки выполнить: через запятую или повтором поля. "
-        "Если не указано - все.",
-        # Без примера Swagger подставляет в поле "string" - это неизвестная проверка.
-        examples=[[]],
+    checks: str | None = Form(
+        None, description="Какие проверки выполнить, через запятую: blur,skew. Если пусто - все."
     ),
     service: AnalysisService = Depends(get_service),
 ) -> ImageAnalysis | PdfAnalysis:
@@ -36,10 +33,13 @@ async def analyze(
     Для PDF каждая страница проверяется отдельно, а документ получает общий итог.
     """
     # Размер известен ещё до чтения файла: слишком большой не тащим в память.
-    if file.size is not None and file.size > service.max_upload_bytes:
-        raise FileTooLargeError(f"File is too large (limit {service.max_upload_bytes} bytes)")
+    max_bytes = int(settings.MAX_UPLOAD_MB * 1024 * 1024)
+    if file.size is not None and file.size > max_bytes:
+        raise FileTooLargeError(f"File is too large (limit {max_bytes} bytes)")
     data = await file.read()
-    return await service.analyze(data, checks or [])
+    if not data:
+        raise InvalidRequestError("Uploaded file is empty")
+    return await service.analyze(data, checks)
 
 
 @router.get("/health", response_model=Health)

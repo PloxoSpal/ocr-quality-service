@@ -1,5 +1,3 @@
-"""Итоговая оценка, чтение файлов и анализ PDF."""
-
 import io
 import math
 
@@ -10,15 +8,12 @@ from PIL import Image
 
 from ocr_quality.analyzer import analyze_image, analyze_pdf, score_page, summarize_document
 from ocr_quality.errors import BrokenFileError, FileTooLargeError, UnsupportedFileError
-from ocr_quality.files import count_pdf_pages, open_pdf, read_image, read_pdf_page
+from ocr_quality.files import open_pdf, read_image, read_pdf_page
 from ocr_quality.schemas import CheckResult, PageResult, PageTimings
 
 from synthetic import blank_page, blur, encode, make_page, make_pdf
 
 ALL = ["blur", "contrast", "exposure", "noise", "resolution", "skew", "text_presence"]
-
-
-# --- итоговая оценка страницы ----------------------------------------------------------
 
 
 def check(score, critical=False, weight=1.0, status=None) -> CheckResult:
@@ -75,9 +70,6 @@ def test_errored_check_makes_page_unsuitable():
     assert not suitable
 
 
-# --- итог документа -----------------------------------------------------------------
-
-
 def page_result(number, suitable, score, has_text=True) -> PageResult:
     return PageResult(
         page=number,
@@ -108,9 +100,6 @@ def test_pages_without_text_are_ignored():
 
 def test_document_without_text_is_unsuitable():
     assert not summarize_document([page_result(1, False, 0.1, False)]).suitable_for_ocr
-
-
-# --- чтение файлов -----------------------------------------------------------------
 
 
 def pil_bytes(img: Image.Image, fmt: str, **kwargs) -> bytes:
@@ -174,10 +163,7 @@ def test_pdf_page_without_scan_is_rendered():
 
 def test_broken_pdf():
     with pytest.raises(BrokenFileError):
-        count_pdf_pages(make_pdf([make_page(width=200, height=200, lines=2)])[:200])
-
-
-# --- анализ целиком ------------------------------------------------------------------
+        open_pdf(make_pdf([make_page(width=200, height=200, lines=2)])[:200])
 
 
 def test_clean_image_is_suitable():

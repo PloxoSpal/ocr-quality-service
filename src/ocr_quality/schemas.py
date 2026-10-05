@@ -55,25 +55,16 @@ class InputInfo(BaseModel):
     page_count: int | None = None
 
 
-class RequestTimings(BaseModel):
-    """Из чего сложилось время обработки изображения, в миллисекундах."""
-
-    queue_ms: float  # ожидание свободного процесса и передача данных
-    load_ms: float
-    preprocess_ms: float
-    checks_ms: float
-
-
 class ImageAnalysis(BaseModel):
     """Ответ ``POST /analyze`` для изображения."""
 
     input: InputInfo
     suitable_for_ocr: bool
     quality_score: float | None
-    processing_time_ms: float
+    processing_time_ms: float = 0.0  # заполняет сервис: время от приёма до ответа
     issues: list[str]
     checks: dict[str, CheckResult]
-    timings: RequestTimings
+    timings: PageTimings
 
 
 class DocumentSummary(BaseModel):
@@ -101,7 +92,7 @@ class PdfAnalysis(BaseModel):
     input: InputInfo
     suitable_for_ocr: bool
     quality_score: float | None
-    processing_time_ms: float
+    processing_time_ms: float = 0.0  # заполняет сервис: время от приёма до ответа
     issues: list[str]
     summary: DocumentSummary
     pages: list[PageResult]

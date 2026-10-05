@@ -83,25 +83,20 @@ def read_image(data: bytes) -> np.ndarray:
 
 
 def open_pdf(data: bytes) -> pdfium.PdfDocument:
-    """Открыть PDF; повреждённый или запароленный файл - BrokenFileError."""
+    """Открыть PDF и проверить число страниц."""
     try:
-        return pdfium.PdfDocument(data)
+        document = pdfium.PdfDocument(data)
     except pdfium.PdfiumError as exc:
         raise BrokenFileError("Cannot open PDF (damaged or password-protected)") from exc
 
-
-def count_pdf_pages(data: bytes) -> int:
-    """Число страниц PDF с проверкой лимитов."""
-    document = open_pdf(data)
-    try:
-        pages = len(document)
-    finally:
-        document.close()
+    pages = len(document)
     if pages == 0:
+        document.close()
         raise BrokenFileError("PDF has no pages")
     if pages > MAX_PDF_PAGES:
+        document.close()
         raise FileTooLargeError(f"PDF has too many pages: {pages} (limit {MAX_PDF_PAGES})")
-    return pages
+    return document
 
 
 def read_pdf_page(document: pdfium.PdfDocument, index: int) -> np.ndarray:
@@ -152,8 +147,5 @@ def bitmap_to_gray(array: np.ndarray) -> np.ndarray:
     # to_numpy() отдаёт память, которой владеет PDFium, поэтому всегда делаем копию.
     if array.ndim == 2:
         return array.copy()
-    if array.shape[2] == 1:
-        return array[:, :, 0].copy()
-    if array.shape[2] == 3:
-        return cv2.cvtColor(array, cv2.COLOR_BGR2GRAY)
-    return cv2.cvtColor(array, cv2.COLOR_BGRA2GRAY)
+    code = cv2.COLOR_BGR2GRAY if array.shape[2] == 3 else cv2.COLOR_BGRA2GRAY
+    return cv2.cvtColor(array, code)

@@ -1,5 +1,3 @@
-"""HTTP API целиком: настоящий сервис с пулом из двух процессов."""
-
 import asyncio
 import os
 
@@ -37,9 +35,6 @@ def assert_error(response, status: int, text: str) -> None:
     assert text in response.json()["detail"]
 
 
-# --- успешные запросы ---------------------------------------------------------------
-
-
 def test_list_checks(client):
     assert client.get("/checks").json() == {"checks": ALL}
 
@@ -65,7 +60,7 @@ def test_analyze_image(client):
     ("checks", "expected"),
     [
         ("blur,skew", ["blur", "skew"]),
-        (["blur", "skew"], ["blur", "skew"]),
+        (" skew , blur ", ["skew", "blur"]),
         ("", ALL),  # так отправляет Swagger, если поле оставить пустым
     ],
 )
@@ -94,9 +89,6 @@ def test_file_type_is_detected_by_content(client):
     assert response.json()["input"]["format"] == "JPEG"
 
 
-# --- ошибки ------------------------------------------------------------------------
-
-
 def test_unknown_check(client):
     response = client.post("/analyze", files=upload(encode(make_page())), data={"checks": "foo"})
     assert_error(response, 422, "Unknown checks: foo. Available: blur, contrast")
@@ -117,7 +109,7 @@ def test_unsupported_and_broken_files(client):
 
 
 def test_too_large_file(client, monkeypatch):
-    monkeypatch.setattr(service_of(client), "max_upload_bytes", 1000)
+    monkeypatch.setattr(settings, "MAX_UPLOAD_MB", 0.001)
     response = client.post("/analyze", files=upload(encode(make_page())))
     assert_error(response, 413, "too large")
 
@@ -131,9 +123,7 @@ def test_busy_service_returns_503(client, monkeypatch):
 
 def test_crashed_worker_is_replaced():
     async def scenario():
-        service = AnalysisService(
-            workers=1, request_limit=4, request_timeout_s=30, max_upload_bytes=10**6
-        )
+        service = AnalysisService(workers=1, request_limit=4)
         try:
             with pytest.raises(WorkerCrashedError):
                 await service.run_in_pool(os._exit, 1)  # воркер умирает

@@ -23,8 +23,6 @@ def create_app() -> FastAPI:
         service = AnalysisService(
             workers=settings.WORKERS,
             request_limit=settings.MAX_REQUESTS or 4 * settings.WORKERS,
-            request_timeout_s=settings.REQUEST_TIMEOUT_S,
-            max_upload_bytes=int(settings.MAX_UPLOAD_MB * 1024 * 1024),
         )
         await service.warm_up()
         app.state.service = service
