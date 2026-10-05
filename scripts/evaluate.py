@@ -1,18 +1,3 @@
-"""Оценить сервис на наборе данных: сравнить вердикты с ручной разметкой и с Tesseract.
-
-Пишет отчёт ``eval/reports/evaluation.md``:
-
-* совпадение вердикта ``suitable_for_ocr`` с разметкой ``eval/labels.csv``;
-* ловит ли нужная проверка каждый размеченный дефект;
-* корреляция итоговой оценки с уверенностью Tesseract (``eval/tesseract_reference.csv``);
-* таблица по каждому изображению и сводка по PDF.
-
-Usage:
-    uv run python scripts/evaluate.py [--dataset DIR]
-"""
-
-from __future__ import annotations
-
 import argparse
 import csv
 import time
@@ -56,7 +41,7 @@ def spearman(x: list[float], y: list[float]) -> float:
 def main() -> None:
     """Точка входа."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=Path, default=Path("OCR_team_developer_task/datatset"))
+    parser.add_argument("--dataset", type=Path, default=Path("eval/dataset"))
     args = parser.parse_args()
 
     labels = read_csv(Path("eval/labels.csv"))

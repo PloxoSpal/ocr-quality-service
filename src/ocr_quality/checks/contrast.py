@@ -1,7 +1,5 @@
 """Контраст: насколько чернила текста отличаются от бумаги."""
 
-from __future__ import annotations
-
 import math
 
 from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp

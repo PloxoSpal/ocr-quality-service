@@ -1,6 +1,6 @@
 # Оценка на выданном наборе данных
 
-Изображений: 50, проверки: blur, contrast, exposure, noise, resolution, skew, text_presence, 31.6 мс на изображение (один поток).
+Изображений: 50, проверки: blur, contrast, exposure, noise, resolution, skew, text_presence, 30.6 мс на изображение (один поток).
 
 ## Совпадение с разметкой
 
@@ -36,7 +36,7 @@
 | image_004.png | yes | пригоден | 1.0 | - |
 | image_005.png | no | **непригоден** | 0.7017 | skew: text is rotated by +9.7° (limit ±5°) |
 | image_006.jpg | no | **непригоден** | 0.8227 | skew: text is rotated by +6.2° (limit ±5°) |
-| image_007.jpg | no | **непригоден** | 0.7017 | skew: text is rotated by +8.1° (limit ±5°) |
+| image_007.jpg | no | **непригоден** | 0.7017 | skew: text is rotated by +8.2° (limit ±5°) |
 | image_008.jpg | no | **непригоден** | 0.4125 | blur: text edges are blurred (edge spread 2.69px, limit 1.20px); skew: text is rotated by +7.4° (limit ±5°) |
 | image_009.jpg | yes | пригоден | 0.9811 | - |
 | image_010.png | no | **непригоден** | 0.7017 | skew: text is rotated by -7.5° (limit ±5°) |

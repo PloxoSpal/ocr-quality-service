@@ -23,16 +23,6 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
-    @property
-    def REQUEST_LIMIT(self) -> int:  # noqa: N802 — свойства настроек в верхнем регистре
-        """Сколько запросов одновременно пускать в сервис."""
-        return self.MAX_REQUESTS or 4 * self.WORKERS
-
-    @property
-    def MAX_UPLOAD_BYTES(self) -> int:  # noqa: N802 — свойства настроек в верхнем регистре
-        """Максимальный размер файла в байтах."""
-        return int(self.MAX_UPLOAD_MB * 1024 * 1024)
-
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 

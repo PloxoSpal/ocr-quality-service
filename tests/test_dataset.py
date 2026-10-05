@@ -1,7 +1,5 @@
 """Регрессия на выданном наборе данных (пропускается, если набора нет)."""
 
-from __future__ import annotations
-
 import csv
 from pathlib import Path
 

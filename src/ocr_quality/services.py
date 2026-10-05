@@ -9,8 +9,6 @@
   и память не растут без предела.
 """
 
-from __future__ import annotations
-
 import asyncio
 import multiprocessing
 import time
@@ -23,7 +21,6 @@ from ocr_quality.analyzer import analyze_image, analyze_pdf, init_worker, summar
 from ocr_quality.checks import ALL_CHECKS
 from ocr_quality.errors import (
     AnalysisTimeoutError,
-    FileTooLargeError,
     InvalidRequestError,
     ServiceBusyError,
     UnknownChecksError,
@@ -79,7 +76,7 @@ class AnalysisService:
         """
         started = time.perf_counter()
         check_names = parse_check_names(requested_checks)
-        input_info = describe_input(data, self.max_upload_bytes)
+        input_info = describe_input(data)
 
         if self.requests_in_progress >= self.request_limit:
             raise ServiceBusyError("Service is busy, retry later")
@@ -157,18 +154,15 @@ def parse_check_names(requested: list[str]) -> list[str]:
     unknown = [name for name in names if name not in ALL_CHECKS]
     if unknown:
         raise UnknownChecksError(
-            f"Unknown checks: {', '.join(unknown)}",
-            {"unknown": unknown, "available": list(ALL_CHECKS)},
+            f"Unknown checks: {', '.join(unknown)}. Available: {', '.join(ALL_CHECKS)}"
         )
     return names
 
 
-def describe_input(data: bytes, max_bytes: int) -> InputInfo:
+def describe_input(data: bytes) -> InputInfo:
     """Проверить загруженный файл и описать его. Тип определяется по содержимому, а не по имени."""
     if not data:
         raise InvalidRequestError("Uploaded file is empty")
-    if len(data) > max_bytes:
-        raise FileTooLargeError(f"File is too large: {len(data)} bytes (limit {max_bytes})")
 
     if is_pdf(data):
         return InputInfo(

@@ -1,4 +1,4 @@
-DATASET ?= OCR_team_developer_task/datatset
+DATASET ?= eval/dataset
 PORT ?= 8000
 
 .PHONY: install run test lint format check evaluate analyze-dataset bench bench-http \
@@ -8,7 +8,7 @@ install:  ## Установить зависимости
 	uv sync
 
 run:  ## Запустить сервис локально
-	uv run python -m ocr_quality.main
+	uv run uvicorn ocr_quality.main:app --host 127.0.0.1 --port $(PORT)
 
 test:  ## Все тесты (тесты на наборе данных пропускаются, если его нет)
 	OCRQ_DATASET_DIR=$(DATASET) uv run pytest

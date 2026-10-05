@@ -1,7 +1,5 @@
 """Наклон: на сколько градусов повёрнуты строки текста."""
 
-from __future__ import annotations
-
 import numpy as np
 
 from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
@@ -46,11 +44,11 @@ class SkewCheck(Check):
         bin_size = max(1.0, 0.5 * page.char_height)
 
         # Грубый поиск с шагом 0.5 градуса, затем точный с шагом 0.05 вокруг лучшего.
-        coarse_angles = np.arange(-45, 45 + 1e-9, 0.5)
+        coarse_angles = np.linspace(-45, 45, 181)
         coarse = [line_sharpness(points, a, bin_size) for a in coarse_angles]
         best = coarse_angles[int(np.argmax(coarse))]
 
-        fine_angles = np.arange(best - 0.5, best + 0.5 + 1e-9, 0.05)
+        fine_angles = np.linspace(best - 0.5, best + 0.5, 21)
         fine = [line_sharpness(points, a, bin_size) for a in fine_angles]
         angle = float(fine_angles[int(np.argmax(fine))])
 

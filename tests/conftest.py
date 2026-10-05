@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 import sys
 from pathlib import Path
@@ -11,9 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from synthetic import make_page
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DATASET_DIR = Path(
-    os.environ.get("OCRQ_DATASET_DIR", REPO_ROOT / "OCR_team_developer_task" / "datatset")
-)
+DATASET_DIR = Path(os.environ.get("OCRQ_DATASET_DIR", REPO_ROOT / "eval" / "dataset"))
 
 
 @pytest.fixture(scope="session")

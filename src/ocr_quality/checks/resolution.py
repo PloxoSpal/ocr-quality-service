@@ -1,7 +1,5 @@
 """Разрешение: достаточно ли крупные символы (в пикселях) для OCR."""
 
-from __future__ import annotations
-
 from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
 from ocr_quality.page import Page
 

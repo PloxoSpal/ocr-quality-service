@@ -1,7 +1,5 @@
 """Шум: пылинки («соль и перец») и зернистость фона."""
 
-from __future__ import annotations
-
 import math
 
 import cv2

@@ -1,7 +1,5 @@
 """Итоговая оценка, чтение файлов и анализ PDF."""
 
-from __future__ import annotations
-
 import io
 import math
 

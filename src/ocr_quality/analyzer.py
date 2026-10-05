@@ -1,10 +1,3 @@
-"""Анализ: прогнать проверки по странице и вычислить итоговую оценку.
-
-Функции ``analyze_image`` и ``analyze_pdf`` выполняются в процессах-воркерах.
-"""
-
-from __future__ import annotations
-
 import math
 import time
 

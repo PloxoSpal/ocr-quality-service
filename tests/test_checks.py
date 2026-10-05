@@ -1,7 +1,5 @@
 """Каждая проверка на синтетических страницах с дозированными дефектами."""
 
-from __future__ import annotations
-
 import pytest
 
 from ocr_quality.checks import ALL_CHECKS

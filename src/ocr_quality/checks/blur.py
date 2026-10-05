@@ -1,7 +1,5 @@
 """Размытие: насколько резкие края у символов текста."""
 
-from __future__ import annotations
-
 import math
 
 import cv2

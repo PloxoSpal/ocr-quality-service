@@ -1,7 +1,4 @@
 """Наличие текста: есть ли на картинке вообще что распознавать."""
-
-from __future__ import annotations
-
 from ocr_quality.checks.base import Check, Measurement, ramp
 from ocr_quality.page import Page
 

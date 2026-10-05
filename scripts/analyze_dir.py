@@ -1,15 +1,3 @@
-"""Отправить все изображения и PDF из указанных папок в запущенный сервис.
-
-Печатает по строке на файл: вердикт, оценку качества, время обработки и
-проблемы, найденные сервисом. Удобно, чтобы проверить сервис на всём наборе
-данных через настоящий HTTP API.
-
-Usage:
-    uv run python scripts/analyze_dir.py DIR [DIR ...] [--url URL] [--checks blur,skew]
-"""
-
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
@@ -41,8 +29,8 @@ def main() -> int:
             )
             if response.status_code != 200:
                 failed += 1
-                error = response.json().get("error", {})
-                print(f"{path.name:20s} HTTP {response.status_code} {error.get('code')}")
+                detail = response.json().get("detail")
+                print(f"{path.name:20s} HTTP {response.status_code} {detail}")
                 continue
             body = response.json()
             suitable += body["suitable_for_ocr"]

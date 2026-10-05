@@ -1,11 +1,3 @@
-"""Формат данных сервиса: результаты проверок, страниц и ответы API.
-
-Эти же модели создают проверки и анализатор, поэтому отдельного перевода
-«внутренних» результатов в «ответ API» нет: что посчитали, то и отдаём.
-"""
-
-from __future__ import annotations
-
 from typing import Any, Literal
 
 from pydantic import BaseModel
@@ -128,17 +120,3 @@ class Health(BaseModel):
     workers: int
     requests_in_progress: int
     request_limit: int
-
-
-class ErrorInfo(BaseModel):
-    """Описание ошибки."""
-
-    code: str
-    message: str
-    details: dict[str, Any] = {}
-
-
-class ErrorResponse(BaseModel):
-    """Ответ с ошибкой."""
-
-    error: ErrorInfo

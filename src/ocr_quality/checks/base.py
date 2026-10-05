@@ -1,8 +1,5 @@
 """Общее для всех проверок: базовый класс и перевод измерения в оценку от 0 до 1."""
 
-from __future__ import annotations
-
-import math
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -37,10 +34,6 @@ def ramp(value: float, bad: float, good: float) -> float:
     Работает в обе стороны: ``good`` может быть и больше, и меньше ``bad``.
     Граница «пройдено / не пройдено» (оценка 0.5) - ровно посередине.
     """
-    if math.isnan(value):
-        return 0.0
-    if good == bad:
-        return 1.0 if value >= good else 0.0
     return min(1.0, max(0.0, (value - bad) / (good - bad)))
 
 
@@ -78,26 +71,28 @@ class Check(ABC):
             if m.score is None:
                 status, score = "not_applicable", None
             else:
-                score = round(min(1.0, max(0.0, m.score)), 4)
+                score = round(m.score, 4)
                 status = "passed" if score >= 0.5 else "failed"
 
+        if status == "passed":
+            passed = True
+        elif status == "failed":
+            passed = False
+        else:
+            passed = None
+
         return CheckResult(
-            passed={"passed": True, "failed": False}.get(status),
+            passed=passed,
             score=score,
             status=status,
             critical=self.critical,
             weight=self.weight,
-            value=round4(m.value),
+            value=None if m.value is None else round(m.value, 4),
             unit=self.unit,
             threshold=self.threshold,
             message=None if status == "passed" else m.problem,
-            details={key: round4(v) if isinstance(v, float) else v for key, v in m.details.items()},
+            details={
+                key: round(v, 4) if isinstance(v, float) else v for key, v in m.details.items()
+            },
             time_ms=round((time.perf_counter() - started) * 1000, 3),
         )
-
-
-def round4(value: float | None) -> float | None:
-    """Округлить до 4 знаков (nan и бесконечность оставить как есть)."""
-    if value is None or math.isnan(value) or math.isinf(value):
-        return value
-    return round(value, 4)

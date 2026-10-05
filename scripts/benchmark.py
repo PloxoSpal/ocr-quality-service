@@ -1,19 +1,3 @@
-"""Benchmark сервиса.
-
-Режим ``local`` (по умолчанию) - без HTTP: среднее время анализа одного
-изображения с разбивкой по стадиям и проверкам, и сколько изображений в секунду
-даёт пул из N процессов.
-
-Режим ``http`` - поднимает сервис и нагружает его одновременными клиентами:
-пропускная способность, задержка, число отказов 503 и память сервиса.
-
-Usage:
-    uv run python scripts/benchmark.py local [--repeats 5]
-    uv run python scripts/benchmark.py http [--concurrency 1 4 16 32] [--pdf]
-"""
-
-from __future__ import annotations
-
 import argparse
 import asyncio
 import multiprocessing
@@ -34,7 +18,7 @@ import psutil
 from ocr_quality.analyzer import analyze_image, init_worker
 from ocr_quality.checks import ALL_CHECKS
 
-DATASET = Path("OCR_team_developer_task/datatset")
+DATASET = Path("eval/dataset")
 
 
 def environment() -> str:
@@ -104,20 +88,7 @@ def run_local(repeats: int) -> None:
 # --- режим http ----------------------------------------------------------------------
 
 
-def encode_upload(name: str, data: bytes) -> tuple[bytes, str]:
-    """Заранее закодировать файл в multipart, чтобы клиент не тратил на это CPU."""
-    boundary = "benchmark-boundary-7MA4YWxkTrZu0gW"
-    head = (
-        f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{name}"\r\n'
-        "Content-Type: application/octet-stream\r\n\r\n"
-    ).encode()
-    return (
-        head + data + f"\r\n--{boundary}--\r\n".encode(),
-        f"multipart/form-data; boundary={boundary}",
-    )
-
-
-async def load_level(url: str, uploads: list, clients: int, total: int) -> dict:
+async def load_level(url: str, uploads: list[tuple[str, bytes]], clients: int, total: int) -> dict:
     """Нагрузка одного уровня: ``clients`` клиентов шлют запросы подряд, всего ``total``."""
     latencies: list[float] = []
     stats = {"ok": 0, "rejected": 0, "errors": 0, "pages": 0}
@@ -129,13 +100,11 @@ async def load_level(url: str, uploads: list, clients: int, total: int) -> dict:
         async def one_client() -> None:
             nonlocal sent, last_ok
             while sent < total:
-                body, content_type = uploads[sent % len(uploads)]
+                name, data = uploads[sent % len(uploads)]
                 sent += 1
                 started = time.perf_counter()
                 try:
-                    response = await client.post(
-                        "/analyze", content=body, headers={"content-type": content_type}
-                    )
+                    response = await client.post("/analyze", files={"file": (name, data)})
                 except httpx.HTTPError:
                     stats["errors"] += 1
                     continue
@@ -177,7 +146,7 @@ def watch_memory(pid: int, stop: threading.Event, peak: list[float]) -> None:
 
 def run_http(concurrency: list[int], requests: int, pdf: bool, env: list[str]) -> None:
     """Поднять сервис и нагрузить его."""
-    uploads = [encode_upload(name, data) for name, data in load_files(pdf)]
+    uploads = load_files(pdf)
     port = 8765
     server = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "ocr_quality.main:app", "--port", str(port)],

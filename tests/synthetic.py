@@ -1,7 +1,5 @@
 """Синтетические страницы документа с дозированными дефектами для тестов."""
 
-from __future__ import annotations
-
 import io
 
 import cv2

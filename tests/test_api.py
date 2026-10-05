@@ -1,7 +1,5 @@
 """HTTP API целиком: настоящий сервис с пулом из двух процессов."""
 
-from __future__ import annotations
-
 import asyncio
 import os
 
@@ -34,11 +32,9 @@ def upload(data: bytes, name: str = "page.png") -> dict:
     return {"file": (name, data)}
 
 
-def assert_error(response, status: int, code: str) -> dict:
+def assert_error(response, status: int, text: str) -> None:
     assert response.status_code == status, response.text
-    body = response.json()
-    assert body["error"]["code"] == code
-    return body
+    assert text in response.json()["detail"]
 
 
 # --- успешные запросы ---------------------------------------------------------------
@@ -65,10 +61,17 @@ def test_analyze_image(client):
     assert body["input"]["width"] == 1200
 
 
-@pytest.mark.parametrize("checks", ["blur,skew", ["blur", "skew"]])
-def test_analyze_selected_checks(client, checks):
+@pytest.mark.parametrize(
+    ("checks", "expected"),
+    [
+        ("blur,skew", ["blur", "skew"]),
+        (["blur", "skew"], ["blur", "skew"]),
+        ("", ALL),  # так отправляет Swagger, если поле оставить пустым
+    ],
+)
+def test_analyze_selected_checks(client, checks, expected):
     response = client.post("/analyze", files=upload(encode(make_page())), data={"checks": checks})
-    assert list(response.json()["checks"]) == ["blur", "skew"]
+    assert list(response.json()["checks"]) == expected
 
 
 def test_blurred_image_gets_issue(client):
@@ -96,35 +99,34 @@ def test_file_type_is_detected_by_content(client):
 
 def test_unknown_check(client):
     response = client.post("/analyze", files=upload(encode(make_page())), data={"checks": "foo"})
-    body = assert_error(response, 422, "unknown_checks")
-    assert body["error"]["details"]["available"] == ALL
+    assert_error(response, 422, "Unknown checks: foo. Available: blur, contrast")
 
 
 def test_missing_or_empty_file(client):
-    assert_error(client.post("/analyze", data={"checks": "blur"}), 400, "invalid_input")
-    assert_error(client.post("/analyze", files=upload(b"")), 400, "invalid_input")
+    # Нет поля file - это ловит сам FastAPI и отвечает 422 в своём формате.
+    assert client.post("/analyze", data={"checks": "blur"}).status_code == 422
+    assert_error(client.post("/analyze", files=upload(b"")), 400, "empty")
 
 
 def test_unsupported_and_broken_files(client):
-    assert_error(client.post("/analyze", files=upload(b"hello")), 415, "unsupported_media_type")
+    assert_error(client.post("/analyze", files=upload(b"hello")), 415, "not a supported")
     broken_png = encode(make_page())[:4000]
-    assert_error(client.post("/analyze", files=upload(broken_png)), 422, "corrupted_file")
+    assert_error(client.post("/analyze", files=upload(broken_png)), 422, "Cannot decode")
     broken_pdf = make_pdf([make_page()])[:300]
-    assert_error(client.post("/analyze", files=upload(broken_pdf, "a.pdf")), 422, "corrupted_file")
+    assert_error(client.post("/analyze", files=upload(broken_pdf, "a.pdf")), 422, "Cannot open")
 
 
 def test_too_large_file(client, monkeypatch):
     monkeypatch.setattr(service_of(client), "max_upload_bytes", 1000)
     response = client.post("/analyze", files=upload(encode(make_page())))
-    assert_error(response, 413, "payload_too_large")
+    assert_error(response, 413, "too large")
 
 
 def test_busy_service_returns_503(client, monkeypatch):
     service = service_of(client)
     monkeypatch.setattr(service, "requests_in_progress", service.request_limit)
     response = client.post("/analyze", files=upload(encode(make_page())))
-    assert_error(response, 503, "overloaded")
-    assert response.headers["retry-after"] == "1"
+    assert_error(response, 503, "busy")
 
 
 def test_crashed_worker_is_replaced():

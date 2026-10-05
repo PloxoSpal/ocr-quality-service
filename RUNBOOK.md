@@ -10,14 +10,14 @@
 | [uv](https://docs.astral.sh/uv/) | ставит Python 3.12 и зависимости |
 | Docker (необязательно) | запуск в контейнере и пересборка эталона Tesseract |
 
-Набор данных должен лежать в корне проекта так же, как в архиве с заданием:
+Набор данных из архива с заданием нужно положить в `eval/dataset/`:
 
 ```
-OCR_team_developer_task/datatset/images/   # 50 изображений
-OCR_team_developer_task/datatset/pdf/      # 20 PDF
+eval/dataset/images/   # 50 изображений
+eval/dataset/pdf/      # 20 PDF
 ```
 
-> В архиве папка называется `datatset` (с опечаткой). Другой путь можно передать через `DATASET=...` в `make` или `OCRQ_DATASET_DIR` для тестов.
+> В архиве папка называется `OCR_team_developer_task/datatset` (с опечаткой): её содержимое переносится в `eval/dataset/`. Другой путь можно передать через `DATASET=...` в `make` или `OCRQ_DATASET_DIR` для тестов.
 >
 > На macOS терминал может не иметь доступа к `~/Downloads` (`Operation not permitted`). Скопируйте папку с заданием в проект через Finder.
 
@@ -53,7 +53,7 @@ docker compose up --build
 ## 4. Проверка работы
 
 ```bash
-D=OCR_team_developer_task/datatset
+D=eval/dataset
 
 curl -s localhost:8000/health
 curl -s localhost:8000/checks
@@ -83,8 +83,8 @@ make analyze-dataset
 Некорректные запросы:
 
 ```bash
-curl -s -F file=@$D/images/image_001.png -F checks=foo localhost:8000/analyze   # 422 unknown_checks
-curl -s -F checks=blur localhost:8000/analyze                                   # 400 invalid_input
+curl -s -F file=@$D/images/image_001.png -F checks=foo localhost:8000/analyze   # 422 Unknown checks: foo...
+curl -s -F checks=blur localhost:8000/analyze                                   # 422, нет поля file
 echo hello > /tmp/fake.png && curl -s -F file=@/tmp/fake.png localhost:8000/analyze   # 415
 ```
 
@@ -127,7 +127,7 @@ uv run python scripts/benchmark.py http --env MAX_REQUESTS=12    # перегр�
 | `REQUEST_TIMEOUT_S` | `120` | время на анализ одного запроса, иначе 504 |
 | `MAX_UPLOAD_MB` | `50` | максимальный размер файла, иначе 413 |
 | `LOG_LEVEL` | `INFO` | уровень логирования |
-| `OCRQ_DATASET_DIR` | `OCR_team_developer_task/datatset` | путь к набору данных для тестов |
+| `OCRQ_DATASET_DIR` | `eval/dataset` | путь к набору данных для тестов |
 
 Пороги проверок — константы в начале каждого файла `src/ocr_quality/checks/*.py`.
 
@@ -135,9 +135,9 @@ uv run python scripts/benchmark.py http --env MAX_REQUESTS=12    # перегр�
 
 | Симптом | Что делать |
 |---|---|
-| `503 overloaded` с `Retry-After: 1` | Сервис занят: внутри уже `MAX_REQUESTS` запросов. Клиенту нужно повторить запрос позже. Сервису — увеличить `WORKERS` или `MAX_REQUESTS`, либо добавить реплики |
-| `413 payload_too_large` | Файл больше `MAX_UPLOAD_MB`, картинка больше 60 Мп или в PDF больше 200 страниц |
-| `504 timeout` | Анализ дольше `REQUEST_TIMEOUT_S` (очень большой PDF) |
+| `503 Service is busy` | Сервис занят: внутри уже `MAX_REQUESTS` запросов. Клиенту нужно повторить запрос позже. Сервису — увеличить `WORKERS` или `MAX_REQUESTS`, либо добавить реплики |
+| `413 ... too large` | Файл больше `MAX_UPLOAD_MB`, картинка больше 60 Мп или в PDF больше 200 страниц |
+| `504 Analysis did not finish` | Анализ дольше `REQUEST_TIMEOUT_S` (очень большой PDF) |
 | Первый запуск 1–3 с | Сервис заранее запускает процессы-воркеры, это один раз при старте |
 | Тесты на наборе данных `skipped` | Набор не найден: задайте `OCRQ_DATASET_DIR` |
 | `Address already in use` | Порт занят: `make run PORT=8001` |

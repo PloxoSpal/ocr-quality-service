@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 
 from ocr_quality.checks import ALL_CHECKS
 from ocr_quality.errors import FileTooLargeError
-from ocr_quality.schemas import ChecksList, ErrorResponse, Health, ImageAnalysis, PdfAnalysis
+from ocr_quality.schemas import ChecksList, Health, ImageAnalysis, PdfAnalysis
 from ocr_quality.services import AnalysisService
 
 router = APIRouter()
@@ -12,8 +10,7 @@ router = APIRouter()
 
 def get_service(request: Request) -> AnalysisService:
     """Сервис анализа, созданный при старте приложения."""
-    service: AnalysisService = request.app.state.service
-    return service
+    return request.app.state.service
 
 
 @router.get("/checks", response_model=ChecksList)
@@ -22,17 +19,15 @@ async def list_checks() -> ChecksList:
     return ChecksList(checks=list(ALL_CHECKS))
 
 
-@router.post(
-    "/analyze",
-    response_model=ImageAnalysis | PdfAnalysis,
-    responses={code: {"model": ErrorResponse} for code in (400, 413, 415, 422, 503, 504)},
-)
+@router.post("/analyze", response_model=ImageAnalysis | PdfAnalysis)
 async def analyze(
     file: UploadFile = File(description="Изображение (PNG, JPEG, WebP, TIFF, BMP) или PDF"),
     checks: list[str] | None = Form(
         None,
         description="Какие проверки выполнить: через запятую или повтором поля. "
         "Если не указано - все.",
+        # Без примера Swagger подставляет в поле "string" - это неизвестная проверка.
+        examples=[[]],
     ),
     service: AnalysisService = Depends(get_service),
 ) -> ImageAnalysis | PdfAnalysis:
