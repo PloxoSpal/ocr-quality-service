@@ -6,7 +6,7 @@
 # Использование: scripts/tesseract_reference.sh [IMAGES_DIR] [OUTPUT_CSV]
 set -euo pipefail
 
-IMAGES_DIR="$(cd "${1:-eval/dataset/images}" && pwd)"
+IMAGES_DIR="$(cd "${1:-dataset/images}" && pwd)"
 OUTPUT="${2:-eval/tesseract_reference.csv}"
 mkdir -p "$(dirname "$OUTPUT")"
 

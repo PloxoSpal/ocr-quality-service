@@ -38,7 +38,7 @@ def spearman(x: list[float], y: list[float]) -> float:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=Path, default=Path("eval/dataset"))
+    parser.add_argument("--dataset", type=Path, default=Path("dataset"))
     args = parser.parse_args()
 
     labels = read_csv(Path("eval/labels.csv"))

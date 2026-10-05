@@ -1,4 +1,4 @@
-DATASET ?= eval/dataset
+DATASET ?= dataset
 PORT ?= 8000
 
 .PHONY: install run test lint format check evaluate analyze-dataset bench bench-http \

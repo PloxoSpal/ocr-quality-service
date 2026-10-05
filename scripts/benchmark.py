@@ -18,7 +18,7 @@ import psutil
 from ocr_quality.analyzer import analyze_image, init_worker
 from ocr_quality.checks import ALL_CHECKS
 
-DATASET = Path("eval/dataset")
+DATASET = Path("dataset")
 
 
 def environment() -> str:
