@@ -1,27 +1,19 @@
-"""Наличие текста: есть ли на картинке вообще что распознавать."""
-
 from ocr_quality.checks.base import Check, Measurement, ramp
 from ocr_quality.page import Page
 
 
+# Считает символы, выстроившиеся в строки: пятна, фактура и рисунки в строки не складываются.
 class TextPresenceCheck(Check):
-    """Считает символы, которые выстроились в слова и строки.
-
-    Одиночные пятна, фактура и рисунки в строки не складываются, поэтому у
-    фотографии или иллюстрации без подписей результат близок к нулю.
-    """
-
     name = "text_presence"
     unit = "characters"
     critical = True
     weight = 1.0
 
-    FEW = 10  # 10 символов и меньше - оценка 0
-    ENOUGH = 60  # 60 и больше - оценка 1
-    threshold = (FEW + ENOUGH) / 2  # 35 символов - граница
+    FEW = 10
+    ENOUGH = 60
+    threshold = (FEW + ENOUGH) / 2
 
     def measure(self, page: Page) -> Measurement:
-        """Посчитать символы и строки текста."""
         return Measurement(
             value=page.char_count,
             score=ramp(page.char_count, self.FEW, self.ENOUGH),

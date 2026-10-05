@@ -8,8 +8,7 @@ SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp", ".pdf"}
 
 
 def main() -> int:
-    """Точка входа."""
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description="Отправить файлы из папок в запущенный сервис")
     parser.add_argument("dirs", nargs="+", type=Path)
     parser.add_argument("--url", default="http://127.0.0.1:8000")
     parser.add_argument("--checks", default=None, help="Comma-separated subset of checks")

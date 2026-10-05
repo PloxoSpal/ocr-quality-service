@@ -12,14 +12,12 @@ from ocr_quality.services import AnalysisService
 
 
 def create_app() -> FastAPI:
-    """Собрать приложение: эндпоинты, сервис анализа и обработку ошибок."""
     logging.basicConfig(
         level=settings.LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        # При старте создаём сервис и запускаем процессы, при остановке - гасим их.
         service = AnalysisService(
             workers=settings.WORKERS,
             request_limit=settings.MAX_REQUESTS or 4 * settings.WORKERS,
@@ -34,7 +32,6 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(ServiceError)
     async def handle_service_error(_request: Request, exc: ServiceError) -> JSONResponse:
-        # Наши ошибки отдаём в том же виде, что и FastAPI свои: {"detail": "..."}.
         return JSONResponse(status_code=exc.status_code, content={"detail": str(exc)})
 
     return app

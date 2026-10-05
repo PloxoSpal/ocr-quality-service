@@ -20,13 +20,11 @@ DEFECT_CHECKS = {
 
 
 def read_csv(path: Path) -> dict[str, dict[str, str]]:
-    """Прочитать CSV в словарь ``имя файла -> строка``."""
     with path.open() as fh:
         return {row["file"]: row for row in csv.DictReader(fh)}
 
 
 def spearman(x: list[float], y: list[float]) -> float:
-    """Ранговая корреляция Спирмена."""
 
     def ranks(values: list[float]) -> np.ndarray:
         values_arr = np.array(values)
@@ -39,7 +37,6 @@ def spearman(x: list[float], y: list[float]) -> float:
 
 
 def main() -> None:
-    """Точка входа."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, default=Path("eval/dataset"))
     args = parser.parse_args()

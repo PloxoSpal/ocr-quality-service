@@ -13,8 +13,6 @@ from ocr_quality.schemas import ImageAnalysis, PdfAnalysis
 
 
 class AnalysisService:
-    """Выполняет анализ файлов в пуле процессов и ограничивает число запросов."""
-
     def __init__(self, workers: int, request_limit: int) -> None:
         self.workers = workers
         self.request_limit = request_limit
@@ -22,15 +20,13 @@ class AnalysisService:
         self.pool = create_pool(workers)
 
     async def warm_up(self) -> None:
-        """Заранее запустить все процессы, чтобы первый запрос не ждал их старта."""
+        # Запускаем процессы заранее, чтобы первый запрос не ждал их старта.
         await asyncio.gather(*(self.run_in_pool(time.sleep, 0.1) for _ in range(self.workers)))
 
     def shutdown(self) -> None:
-        """Остановить пул процессов."""
         self.pool.shutdown(cancel_futures=True)
 
     async def analyze(self, data: bytes, checks: str | None) -> ImageAnalysis | PdfAnalysis:
-        """Проанализировать изображение или PDF."""
         started = time.perf_counter()
         check_names = parse_check_names(checks)
 
@@ -46,23 +42,17 @@ class AnalysisService:
         return result
 
     async def run_in_pool(self, function: Callable[..., Any], *args: Any) -> Any:
-        """Выполнить функцию в процессе-воркере, не блокируя сервер."""
         loop = asyncio.get_running_loop()
         try:
             return await loop.run_in_executor(self.pool, function, *args)
         except BrokenProcessPool as exc:
-            # Процесс-воркер умер (например, его убила система из-за памяти), и пул
-            # больше не принимает задачи. Создаём новый, чтобы сервис жил дальше.
+            # Воркер умер (например, его убила система из-за памяти), и пул сломан навсегда.
             self.pool = create_pool(self.workers)
             raise WorkerCrashedError("A worker process crashed while analysing the file") from exc
 
 
 def create_pool(workers: int) -> ProcessPoolExecutor:
-    """Создать пул процессов.
-
-    ``spawn`` запускает каждый воркер чистым процессом - это надёжно и
-    одинаково работает на macOS и Linux.
-    """
+    # spawn одинаково работает на macOS и Linux и не копирует состояние родителя.
     return ProcessPoolExecutor(
         max_workers=workers,
         mp_context=multiprocessing.get_context("spawn"),
@@ -71,7 +61,6 @@ def create_pool(workers: int) -> ProcessPoolExecutor:
 
 
 def parse_check_names(checks: str | None) -> list[str]:
-    """Разобрать проверки из строки вида ``"blur,skew"``. Пусто - значит все."""
     names = [name.strip() for name in (checks or "").split(",") if name.strip()]
     if not names:
         return list(ALL_CHECKS)

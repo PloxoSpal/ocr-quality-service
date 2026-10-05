@@ -18,24 +18,17 @@ from ocr_quality.schemas import (
     PdfAnalysis,
 )
 
-MIN_QUALITY_SCORE = 0.6  # страница пригодна, только если итоговая оценка не ниже
-SCORE_FLOOR = 0.1  # оценки ниже приравниваем к 0.1, чтобы один ноль не обнулял всё
+MIN_QUALITY_SCORE = 0.6
+SCORE_FLOOR = 0.1  # чтобы одна нулевая оценка не обнуляла всё произведение
 
 
 def init_worker() -> None:
-    """Настроить процесс-воркер.
-
-    У OpenCV свой пул потоков. Процессов-воркеров уже столько же, сколько ядер,
-    поэтому внутренние потоки OpenCV отключаем - иначе ядра перегружаются.
-    """
+    # Воркеров уже столько же, сколько ядер, - свои потоки OpenCV только мешали бы.
     cv2.setNumThreads(1)
 
 
 def analyze_file(data: bytes, check_names: list[str]) -> ImageAnalysis | PdfAnalysis:
-    """Проанализировать изображение или PDF и собрать ответ API.
-
-    Выполняется в процессе-воркере. Тип файла определяется по содержимому, а не по имени.
-    """
+    # Выполняется в воркере. Тип файла определяем по содержимому, а не по имени.
     if is_pdf(data):
         pages = analyze_pdf(data, check_names)
         document = summarize_document(pages)
@@ -67,7 +60,6 @@ def analyze_file(data: bytes, check_names: list[str]) -> ImageAnalysis | PdfAnal
 
 
 def analyze_image(data: bytes, check_names: list[str]) -> PageResult:
-    """Проанализировать изображение как одну страницу."""
     started = time.perf_counter()
     gray = read_image(data)
     load_ms = (time.perf_counter() - started) * 1000
@@ -75,7 +67,6 @@ def analyze_image(data: bytes, check_names: list[str]) -> PageResult:
 
 
 def analyze_pdf(data: bytes, check_names: list[str]) -> list[PageResult]:
-    """Проанализировать каждую страницу PDF по очереди."""
     document = open_pdf(data)
     try:
         results = []
@@ -92,7 +83,6 @@ def analyze_pdf(data: bytes, check_names: list[str]) -> list[PageResult]:
 def analyze_page(
     gray: np.ndarray, check_names: list[str], page_number: int = 1, load_ms: float = 0.0
 ) -> PageResult:
-    """Подготовить страницу, выполнить проверки и вычислить итог."""
     page = prepare_page(gray)
 
     started = time.perf_counter()
@@ -120,15 +110,8 @@ def analyze_page(
 
 
 def score_page(results: dict[str, CheckResult]) -> tuple[bool, float | None, list[str]]:
-    """Свести результаты проверок в итог страницы: (пригодна ли, оценка, проблемы).
-
-    Итоговая оценка - взвешенное геометрическое среднее оценок проверок. Оно
-    выбрано потому, что для OCR одно очень плохое свойство (например, сильное
-    размытие) портит всё, как бы хороши ни были остальные.
-
-    Страница пригодна, если не провалена ни одна критичная проверка, ни одна
-    проверка не упала с ошибкой и итоговая оценка не ниже ``MIN_QUALITY_SCORE``.
-    """
+    # Взвешенное геометрическое среднее: одно очень плохое свойство (например, сильное
+    # размытие) портит OCR, как бы хороши ни были остальные.
     scored = [r for r in results.values() if r.score is not None]
     quality = None
     if scored:
@@ -150,12 +133,7 @@ def score_page(results: dict[str, CheckResult]) -> tuple[bool, float | None, lis
 
 
 def summarize_document(pages: list[PageResult]) -> DocumentResult:
-    """Свести результаты страниц в итог документа.
-
-    Страницы без текста (обложки, фото) считаются пустыми и в оценке не
-    участвуют. Документ пригоден, если пригодны все остальные страницы; его
-    оценка - среднее по ним.
-    """
+    # Страницы без текста (обложки, фото) в итоге документа не участвуют.
     blank = [p.page for p in pages if p.text_detected is False]
     text_pages = [p for p in pages if p.text_detected is not False]
     suitable = [p.page for p in text_pages if p.suitable_for_ocr]

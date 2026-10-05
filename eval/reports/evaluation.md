@@ -1,6 +1,6 @@
 # Оценка на выданном наборе данных
 
-Изображений: 50, проверки: blur, contrast, exposure, noise, resolution, skew, text_presence, 31.3 мс на изображение (один поток).
+Изображений: 50, проверки: blur, contrast, exposure, noise, resolution, skew, text_presence, 32.1 мс на изображение (один поток).
 
 ## Совпадение с разметкой
 

@@ -13,7 +13,7 @@ run:  ## Запустить сервис локально
 test:  ## Все тесты (тесты на наборе данных пропускаются, если его нет)
 	OCRQ_DATASET_DIR=$(DATASET) uv run pytest
 
-lint:  ## Линтер, форматирование, docstring и типы
+lint:  ## Линтер, форматирование и типы
 	uv run ruff check src tests scripts
 	uv run ruff format --check src tests scripts
 	uv run mypy

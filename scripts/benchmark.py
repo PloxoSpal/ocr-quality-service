@@ -22,7 +22,6 @@ DATASET = Path("eval/dataset")
 
 
 def environment() -> str:
-    """Описание машины, на которой идёт замер."""
     cpu = platform.processor() or platform.machine()
     if platform.system() == "Darwin":
         cpu = subprocess.check_output(["sysctl", "-n", "machdep.cpu.brand_string"], text=True)
@@ -34,7 +33,7 @@ def environment() -> str:
 
 
 def load_files(pdf: bool) -> list[tuple[str, bytes]]:
-    """Прочитать файлы набора в память, чтобы чтение с диска не попало в замер."""
+    # Читаем заранее, чтобы чтение с диска не попало в замер.
     folder = DATASET / ("pdf" if pdf else "images")
     return [
         (p.name, p.read_bytes()) for p in sorted(folder.iterdir()) if not p.name.startswith(".")
@@ -45,7 +44,6 @@ def load_files(pdf: bool) -> list[tuple[str, bytes]]:
 
 
 def run_local(repeats: int) -> None:
-    """Замер анализа без HTTP."""
     images = load_files(pdf=False)
     names = list(ALL_CHECKS)
     init_worker()
@@ -89,7 +87,6 @@ def run_local(repeats: int) -> None:
 
 
 async def load_level(url: str, uploads: list[tuple[str, bytes]], clients: int, total: int) -> dict:
-    """Нагрузка одного уровня: ``clients`` клиентов шлют запросы подряд, всего ``total``."""
     latencies: list[float] = []
     stats = {"ok": 0, "rejected": 0, "errors": 0, "pages": 0}
     sent = 0
@@ -134,7 +131,6 @@ async def load_level(url: str, uploads: list[tuple[str, bytes]], clients: int, t
 
 
 def watch_memory(pid: int, stop: threading.Event, peak: list[float]) -> None:
-    """Следить за пиковой памятью сервиса (сам процесс и его воркеры)."""
     process = psutil.Process(pid)
     while not stop.wait(0.5):
         try:
@@ -145,7 +141,6 @@ def watch_memory(pid: int, stop: threading.Event, peak: list[float]) -> None:
 
 
 def run_http(concurrency: list[int], requests: int, pdf: bool, env: list[str]) -> None:
-    """Поднять сервис и нагрузить его."""
     uploads = load_files(pdf)
     port = 8765
     server = subprocess.Popen(
@@ -190,7 +185,6 @@ def run_http(concurrency: list[int], requests: int, pdf: bool, env: list[str]) -
 
 
 def main() -> None:
-    """Точка входа."""
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=["local", "http"], nargs="?", default="local")
     parser.add_argument("--repeats", type=int, default=5)

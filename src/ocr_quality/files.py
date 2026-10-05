@@ -1,5 +1,3 @@
-"""Чтение входных файлов: изображение или страница PDF превращается в серую картинку."""
-
 import io
 from dataclasses import dataclass
 
@@ -11,18 +9,15 @@ from PIL import Image, ImageOps
 from ocr_quality.errors import BrokenFileError, FileTooLargeError, UnsupportedFileError
 
 IMAGE_FORMATS = {"PNG", "JPEG", "WEBP", "TIFF", "BMP"}
-MAX_PIXELS = 60_000_000  # защита от «бомб»: картинки с огромным числом пикселей
+MAX_PIXELS = 60_000_000  # защита от «бомб»
 MAX_PDF_PAGES = 200
-PDF_RENDER_DPI = 200  # для страниц PDF, которые не являются сканом
+PDF_RENDER_DPI = 200
 
-# Свой лимит пикселей проверяем сами, поэтому встроенный в Pillow отключаем.
-Image.MAX_IMAGE_PIXELS = None
+Image.MAX_IMAGE_PIXELS = None  # лимит пикселей проверяем сами
 
 
 @dataclass
 class ImageInfo:
-    """Сведения из заголовка изображения (без декодирования пикселей)."""
-
     format: str
     width: int
     height: int
@@ -30,12 +25,10 @@ class ImageInfo:
 
 
 def is_pdf(data: bytes) -> bool:
-    """Похож ли файл на PDF: сигнатура ``%PDF-`` в первом килобайте."""
     return b"%PDF-" in data[:1024]
 
 
 def read_image_info(data: bytes) -> ImageInfo:
-    """Прочитать формат и размер изображения из заголовка и проверить лимиты."""
     try:
         with Image.open(io.BytesIO(data)) as img:
             info = ImageInfo(
@@ -54,7 +47,6 @@ def read_image_info(data: bytes) -> ImageInfo:
 
 
 def check_pixel_limit(width: int, height: int) -> None:
-    """Бросить FileTooLargeError, если в картинке слишком много пикселей."""
     if width * height > MAX_PIXELS:
         raise FileTooLargeError(
             f"Image is too large: {width}x{height} px exceeds {MAX_PIXELS} pixels"
@@ -62,7 +54,6 @@ def check_pixel_limit(width: int, height: int) -> None:
 
 
 def read_image(data: bytes) -> np.ndarray:
-    """Декодировать изображение в серую картинку (8 бит)."""
     info = read_image_info(data)
 
     if info.has_alpha:
@@ -83,7 +74,6 @@ def read_image(data: bytes) -> np.ndarray:
 
 
 def open_pdf(data: bytes) -> pdfium.PdfDocument:
-    """Открыть PDF и проверить число страниц."""
     try:
         document = pdfium.PdfDocument(data)
     except pdfium.PdfiumError as exc:
@@ -100,12 +90,8 @@ def open_pdf(data: bytes) -> pdfium.PdfDocument:
 
 
 def read_pdf_page(document: pdfium.PdfDocument, index: int) -> np.ndarray:
-    """Получить страницу PDF как серую картинку.
-
-    Если страница - это скан (одна картинка на всю страницу), берём эту картинку
-    как есть, в её родном разрешении: так быстрее и точнее. Иначе рисуем страницу
-    с разрешением ``PDF_RENDER_DPI``.
-    """
+    # Скан (одна картинка на всю страницу) берём как есть, в родном разрешении: так
+    # быстрее и точнее. Остальные страницы рисуем в PDF_RENDER_DPI.
     try:
         page = document[index]
         scan = find_scan_image(page)
@@ -124,7 +110,6 @@ def read_pdf_page(document: pdfium.PdfDocument, index: int) -> np.ndarray:
 
 
 def find_scan_image(page: pdfium.PdfPage) -> pdfium.PdfImage | None:
-    """Вернуть картинку-скан, если страница целиком состоит из одной неповёрнутой картинки."""
     if page.get_rotation() != 0:
         return None
     images = list(page.get_objects(filter=[pdfium.raw.FPDF_PAGEOBJ_IMAGE], max_depth=2))
@@ -143,8 +128,7 @@ def find_scan_image(page: pdfium.PdfPage) -> pdfium.PdfImage | None:
 
 
 def bitmap_to_gray(array: np.ndarray) -> np.ndarray:
-    """Перевести картинку из PDFium (серую, BGR или BGRA) в собственную серую копию."""
-    # to_numpy() отдаёт память, которой владеет PDFium, поэтому всегда делаем копию.
+    # to_numpy() отдаёт память PDFium, поэтому нужна своя копия.
     if array.ndim == 2:
         return array.copy()
     code = cv2.COLOR_BGR2GRAY if array.shape[2] == 3 else cv2.COLOR_BGRA2GRAY

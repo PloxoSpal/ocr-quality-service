@@ -1,5 +1,3 @@
-"""Размытие: насколько резкие края у символов текста."""
-
 import math
 
 import cv2
@@ -9,39 +7,30 @@ from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
 from ocr_quality.page import Page, cut_text_tiles
 
 
+# У края с перепадом яркости C, размытого гауссианом ширины sigma, самый крутой градиент
+# равен C / (sigma * sqrt(2*pi)). По перепаду и градиенту в каждом текстовом тайле находим
+# sigma - она не зависит ни от контраста, ни от количества текста.
 class BlurCheck(Check):
-    """Оценивает ширину размытия краёв символов в каждом текстовом тайле.
-
-    Идея: у края с перепадом яркости ``C``, размытого гауссианом ширины ``sigma``,
-    самый крутой перепад (градиент) равен ``C / (sigma * sqrt(2*pi))``. В каждом
-    тайле берём самый сильный градиент и перепад яркости и находим ``sigma``.
-    Такая оценка не зависит ни от контраста, ни от количества текста.
-
-    Итоговая оценка - худшая из двух: по медианной ширине размытия и по доле
-    размытых тайлов. Вторая ловит страницы, размытые только частично.
-    """
-
     name = "blur"
     unit = "edge_sigma_px"
     critical = True
     weight = 1.5
 
-    SHARP = 1.0  # ширина размытия, px: 1.0 и меньше - резко (оценка 1)
-    BLURRED = 1.4  # 1.4 и больше - размыто (оценка 0)
-    threshold = (SHARP + BLURRED) / 2  # 1.2 px - граница
+    SHARP = 1.0
+    BLURRED = 1.4
+    threshold = (SHARP + BLURRED) / 2
 
-    FEW_BLURRED_TILES = 0.1  # доля размытых тайлов, дающая оценку 1
-    MANY_BLURRED_TILES = 0.5  # доля, дающая оценку 0
-    MIN_TILE_CONTRAST = 25  # тайлы с меньшим перепадом яркости пропускаем
+    # Доля размытых тайлов ловит страницы, размытые только частично.
+    FEW_BLURRED_TILES = 0.1
+    MANY_BLURRED_TILES = 0.5
+    MIN_TILE_CONTRAST = 25
     MIN_TILES = 3
 
     def measure(self, page: Page) -> Measurement:
-        """Измерить ширину размытия краёв в текстовых тайлах."""
         if page.text_tiles.sum() < self.MIN_TILES:
             return not_applicable("blur: not enough text to judge sharpness")
 
-        # Модуль градиента: насколько резко меняется яркость в каждом пикселе.
-        # Собель 3x3 даёт перепад, умноженный на 8, поэтому делим.
+        # Собель 3x3 даёт перепад, умноженный на 8.
         gx = cv2.Sobel(page.gray, cv2.CV_32F, 1, 0, ksize=3)
         gy = cv2.Sobel(page.gray, cv2.CV_32F, 0, 1, ksize=3)
         gradient = cv2.magnitude(gx, gy) / 8

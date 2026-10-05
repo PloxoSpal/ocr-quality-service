@@ -10,13 +10,11 @@ router = APIRouter()
 
 
 def get_service(request: Request) -> AnalysisService:
-    """Сервис анализа, созданный при старте приложения."""
     return request.app.state.service
 
 
 @router.get("/checks", response_model=ChecksList)
 async def list_checks() -> ChecksList:
-    """Список всех проверок качества."""
     return ChecksList(checks=list(ALL_CHECKS))
 
 
@@ -28,11 +26,7 @@ async def analyze(
     ),
     service: AnalysisService = Depends(get_service),
 ) -> ImageAnalysis | PdfAnalysis:
-    """Проверить пригодность изображения или PDF для OCR.
-
-    Для PDF каждая страница проверяется отдельно, а документ получает общий итог.
-    """
-    # Размер известен ещё до чтения файла: слишком большой не тащим в память.
+    # Размер известен до чтения: слишком большой файл не тащим в память.
     max_bytes = int(settings.MAX_UPLOAD_MB * 1024 * 1024)
     if file.size is not None and file.size > max_bytes:
         raise FileTooLargeError(f"File is too large (limit {max_bytes} bytes)")
@@ -44,7 +38,6 @@ async def analyze(
 
 @router.get("/health", response_model=Health)
 async def health(service: AnalysisService = Depends(get_service)) -> Health:
-    """Сервис жив; сколько запросов сейчас внутри."""
     return Health(
         workers=service.workers,
         requests_in_progress=service.requests_in_progress,

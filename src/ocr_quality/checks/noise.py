@@ -1,5 +1,3 @@
-"""Шум: пылинки («соль и перец») и зернистость фона."""
-
 import math
 
 import cv2
@@ -9,33 +7,23 @@ from ocr_quality.checks.base import Check, Measurement, ramp
 from ocr_quality.page import Page
 
 
+# Пылинки вдали от текста и зернистость бумаги, итог - по худшей. Меряем только в области
+# документа: фактура стола на фото чека шумом не считается. Некритичная.
 class NoiseCheck(Check):
-    """Две оценки шума, итог - по худшей.
-
-    * Пылинки: крошечные пятна чернил вдали от текста, на мегапиксель. Именно они
-      мешают бинаризации и превращаются в лишние «символы».
-    * Зернистость: стандартное отклонение шума по методу Immerkaer, считается
-      только по пикселям бумаги, чтобы края букв его не завышали.
-
-    Оба замера делаются только в области документа: фактура стола на фото чека
-    шумом документа не считается. Проверка некритичная.
-    """
-
     name = "noise"
     unit = "specks_per_mpx"
     critical = False
     weight = 0.5
 
-    FEW_SPECKS = 3_000  # пылинок на мегапиксель: 3000 и меньше - оценка 1
-    MANY_SPECKS = 30_000  # 30000 и больше - оценка 0
+    FEW_SPECKS = 3_000
+    MANY_SPECKS = 30_000
     threshold = (FEW_SPECKS + MANY_SPECKS) / 2
 
-    LOW_SIGMA = 4  # зернистость (уровни яркости): 4 и меньше - оценка 1
-    HIGH_SIGMA = 12  # 12 и больше - оценка 0
-    MAX_SPECK_AREA = 6  # пятно до 6 пикселей - пылинка
+    LOW_SIGMA = 4
+    HIGH_SIGMA = 12
+    MAX_SPECK_AREA = 6
 
     def measure(self, page: Page) -> Measurement:
-        """Посчитать пылинки и зернистость фона."""
         specks = self.specks_per_megapixel(page)
         sigma = self.grain_sigma(page)
         specks_score = ramp(specks, self.MANY_SPECKS, self.FEW_SPECKS)
@@ -52,9 +40,7 @@ class NoiseCheck(Check):
         )
 
     def specks_per_megapixel(self, page: Page) -> float:
-        """Сколько пылинок на мегапиксель области документа вдали от текста."""
-        # Зона «рядом с текстом» - на высоту символа вокруг букв: точки над «i»
-        # и знаки препинания пылинками не считаем.
+        # Точки над «i» и знаки препинания рядом с буквами пылинками не считаем.
         reach = max(3, round(page.char_height or 8.0))
         near_text = cv2.dilate(page.text_mask, np.ones((2 * reach + 1, 2 * reach + 1), np.uint8))
         free = (near_text == 0) & (page.document_mask > 0)
@@ -71,7 +57,7 @@ class NoiseCheck(Check):
 
     @staticmethod
     def grain_sigma(page: Page) -> float:
-        """Стандартное отклонение шума по методу Immerkaer на пикселях бумаги."""
+        # Оценка шума по Immerkaer, только по пикселям бумаги, чтобы края букв её не завышали.
         kernel = np.array([[1, -2, 1], [-2, 4, -2], [1, -2, 1]], np.float32)
         response = np.abs(cv2.filter2D(page.gray.astype(np.float32), -1, kernel))
         paper = (page.paper_mask > 0) & (page.document_mask > 0)

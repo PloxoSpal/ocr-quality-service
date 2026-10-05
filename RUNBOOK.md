@@ -92,7 +92,7 @@ echo hello > /tmp/fake.png && curl -s -F file=@/tmp/fake.png localhost:8000/anal
 
 ```bash
 make test     # все тесты, включая регрессию на наборе данных (~10 с)
-make lint     # ruff (стиль, импорты, обязательные docstring) и mypy
+make lint     # ruff (стиль, импорты) и mypy
 make check    # всё вместе
 ```
 
