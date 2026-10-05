@@ -1,0 +1,19 @@
+services:
+  ocr-quality:
+    build: .
+    image: ocr-quality:latest
+    ports:
+      - "8000:8000"
+    environment:
+      # Размер пула должен совпадать с лимитом CPU ниже: внутри контейнера Python
+      # видит все CPU хоста, а не квоту cgroup.
+      OCRQ_WORKERS: "4"
+      OCRQ_MAX_REQUESTS: "16"
+      OCRQ_MAX_UPLOAD_MB: "50"
+      OCRQ_LOG_LEVEL: "INFO"
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 2g
+    restart: unless-stopped

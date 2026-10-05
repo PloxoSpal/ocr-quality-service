@@ -1,0 +1,51 @@
+file,expected,defects,note
+image_001.png,yes,low_contrast,faded print; Tesseract still reads it well
+image_002.jpg,no,skew;noise,rotated ~13 degrees; Tesseract finds no words
+image_003.jpg,yes,photo;noise,receipt photo in hand; anonymised blur boxes
+image_004.png,yes,,clean page with photos
+image_005.png,no,skew,rotated ~10 degrees
+image_006.jpg,no,skew;noise,rotated ~6 degrees with specks
+image_007.jpg,no,skew,rotated ~8 degrees
+image_008.jpg,no,blur;skew,heavily blurred (Chinese text)
+image_009.jpg,yes,gray_background,grey background (Chinese text)
+image_010.png,no,skew,rotated ~7.5 degrees
+image_011.png,yes,,clean
+image_012.png,yes,,clean
+image_013.png,borderline,photo;low_contrast;occlusion,receipt photo; low contrast; black blot
+image_014.png,yes,low_contrast,grey low-contrast scan; Tesseract conf ~80
+image_015.jpg,borderline,photo;noise;low_contrast,faded thermal receipt with specks
+image_016.jpg,no,skew;noise,rotated ~6.5 degrees with heavy specks
+image_017.png,yes,low_contrast,faded print
+image_018.jpg,no,skew,rotated ~8 degrees on yellow paper
+image_019.png,yes,,clean
+image_020.png,yes,,form with slight skew (~3 degrees)
+image_021.png,yes,photo,receipt photo with shadow
+image_022.png,no,blur,blurred page
+image_023.png,yes,,clean
+image_024.png,borderline,photo;dot_matrix;low_contrast,dot-matrix receipt photo
+image_025.png,yes,,clean page with photos
+image_026.png,yes,,clean two-column page
+image_027.png,yes,,clean (French)
+image_028.jpg,no,small_text,tiny table text
+image_029.png,yes,,clean
+image_030.png,no,blur;low_contrast,heavily blurred yellow page
+image_031.png,no,no_text,illustration without text
+image_032.png,yes,photo,receipt photo; anonymised header
+image_033.png,yes,noise,specks
+image_034.png,yes,noise,heavy specks; Tesseract still reads it well
+image_035.jpg,no,skew;photo,receipt photo rotated ~12 degrees with shadow
+image_036.png,no,blur;occlusion;no_text,heavily blurred with black box
+image_037.png,yes,photo,receipt photo; anonymised header
+image_038.jpg,no,blur;skew,blurred and rotated ~13 degrees
+image_039.png,yes,noise,specks
+image_040.png,yes,noise,heavy specks; Tesseract still reads it well
+image_041.jpg,no,skew,sharp but rotated ~6 degrees
+image_042.png,no,no_text,illustration with a few tiny captions
+image_043.png,yes,,clean
+image_044.png,no,small_text;low_contrast,tiny grey text
+image_045.png,yes,photo,receipt photo on dark background
+image_046.png,yes,low_contrast,very faded but sharp; Tesseract conf ~86
+image_047.png,no,blur,heavily blurred
+image_048.jpg,yes,photo,receipt photo on dark background
+image_049.png,yes,noise,specks
+image_050.jpg,borderline,small_text;blur,small slightly soft text

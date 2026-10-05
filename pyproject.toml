@@ -1,0 +1,72 @@
+[project]
+name = "ocr-quality"
+version = "0.2.0"
+description = "HTTP service that assesses whether a document image is suitable for OCR"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "numpy>=1.26",
+    "opencv-python-headless>=4.10",
+    "pillow>=10.4",
+    "pypdfium2>=4.30",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "httpx>=0.27",
+    "httpx2>=2.13.1",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "psutil>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ocr_quality"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "N", "PT", "D"]
+ignore = ["D105", "D107", "RUF001", "RUF002", "RUF003", "B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ocr_quality"]
+known-local-folder = ["synthetic"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "PT018"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+packages = ["ocr_quality"]
+plugins = ["pydantic.mypy"]
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["pypdfium2.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "dataset: tests that run on the provided dataset (skipped if it is missing)",
+]

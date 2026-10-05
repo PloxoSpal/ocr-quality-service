@@ -1,0 +1,13 @@
+.git
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.import_linter_cache
+**/__pycache__
+OCR_team_developer_task
+dataset
+bench
+eval
+tests
+scripts

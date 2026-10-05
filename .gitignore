@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Инструменты
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ОС и IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Материалы задания и набор данных (распространяются отдельно, в репозиторий не попадают)
+/OCR_team_developer_task/
+/dataset
+
+# Сгенерированные отчёты
