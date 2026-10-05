@@ -8,7 +8,7 @@ install:  ## Установить зависимости
 	uv sync
 
 run:  ## Запустить сервис локально
-	uv run python -m ocr_quality --host 0.0.0.0 --port $(PORT)
+	uv run python -m ocr_quality.main
 
 test:  ## Все тесты (тесты на наборе данных пропускаются, если его нет)
 	OCRQ_DATASET_DIR=$(DATASET) uv run pytest
@@ -43,4 +43,4 @@ docker-build:
 	docker build -t ocr-quality:latest .
 
 docker-run:
-	docker run --rm -p $(PORT):8000 --cpus 4 --memory 2g -e OCRQ_WORKERS=4 ocr-quality:latest
+	docker run --rm -p $(PORT):8000 --cpus 4 --memory 2g -e WORKERS=4 ocr-quality:latest

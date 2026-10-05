@@ -8,7 +8,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from ocr_quality.config import Settings
+from ocr_quality.config import settings
 from ocr_quality.errors import WorkerCrashedError
 from ocr_quality.main import create_app
 from ocr_quality.services import AnalysisService
@@ -20,8 +20,10 @@ ALL = ["blur", "contrast", "exposure", "noise", "resolution", "skew", "text_pres
 
 @pytest.fixture(scope="module")
 def client():
-    with TestClient(create_app(Settings(workers=2))) as test_client:
-        yield test_client
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(settings, "WORKERS", 2)
+        with TestClient(create_app()) as test_client:
+            yield test_client
 
 
 def service_of(client) -> AnalysisService:

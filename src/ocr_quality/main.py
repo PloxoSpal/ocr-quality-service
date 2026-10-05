@@ -1,6 +1,6 @@
-"""Создание приложения FastAPI.
+"""Создание и запуск приложения FastAPI.
 
-Запуск: ``uvicorn ocr_quality.main:app`` или ``python -m ocr_quality``.
+Запуск: ``python -m ocr_quality.main`` или ``uvicorn ocr_quality.main:app``.
 """
 
 from __future__ import annotations
@@ -10,32 +10,32 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from ocr_quality import __version__
 from ocr_quality.api import router
-from ocr_quality.config import Settings
+from ocr_quality.config import settings
 from ocr_quality.errors import ServiceError
 from ocr_quality.services import AnalysisService
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app() -> FastAPI:
     """Собрать приложение: эндпоинты, сервис анализа и обработку ошибок."""
-    settings = settings or Settings()
     logging.basicConfig(
-        level=settings.log_level, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+        level=settings.LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # При старте создаём сервис и запускаем процессы, при остановке - гасим их.
         service = AnalysisService(
-            workers=settings.workers,
-            request_limit=settings.request_limit,
-            request_timeout_s=settings.request_timeout_s,
-            max_upload_bytes=settings.max_upload_bytes,
+            workers=settings.WORKERS,
+            request_limit=settings.REQUEST_LIMIT,
+            request_timeout_s=settings.REQUEST_TIMEOUT_S,
+            max_upload_bytes=settings.MAX_UPLOAD_BYTES,
         )
         await service.warm_up()
         app.state.service = service
@@ -73,3 +73,7 @@ def error_response(
 
 
 app = create_app()
+
+
+if __name__ == "__main__":
+    uvicorn.run("ocr_quality.main:app", host="127.0.0.1", port=8000, workers=1)

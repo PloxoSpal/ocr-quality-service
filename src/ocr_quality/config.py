@@ -1,6 +1,4 @@
-"""Настройки сервиса. Каждую можно задать переменной окружения с префиксом ``OCRQ_``."""
-
-from __future__ import annotations
+"""Настройки сервиса из .env и переменных окружения."""
 
 import os
 
@@ -8,31 +6,34 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Настройки сервиса, например ``OCRQ_WORKERS=4``."""
-
-    model_config = SettingsConfigDict(env_prefix="OCRQ_")
+    """Настройки сервиса, например ``WORKERS=4``."""
 
     # Сколько процессов параллельно считают проверки. По умолчанию - число ядер.
-    workers: int = os.cpu_count() or 1
+    WORKERS: int = os.cpu_count() or 1
 
     # Сколько запросов может одновременно находиться в сервисе (считаются или ждут
     # свободного процесса). Остальные сразу получают 503. 0 - значит 4 x workers.
-    max_requests: int = 0
+    MAX_REQUESTS: int = 0
 
     # Сколько секунд даётся на анализ одного запроса, иначе 504.
-    request_timeout_s: float = 120.0
+    REQUEST_TIMEOUT_S: float = 120.0
 
     # Максимальный размер загружаемого файла в мегабайтах, иначе 413.
-    max_upload_mb: float = 50.0
+    MAX_UPLOAD_MB: float = 50.0
 
-    log_level: str = "INFO"
+    LOG_LEVEL: str = "INFO"
 
     @property
-    def request_limit(self) -> int:
+    def REQUEST_LIMIT(self) -> int:  # noqa: N802 — свойства настроек в верхнем регистре
         """Сколько запросов одновременно пускать в сервис."""
-        return self.max_requests or 4 * self.workers
+        return self.MAX_REQUESTS or 4 * self.WORKERS
 
     @property
-    def max_upload_bytes(self) -> int:
+    def MAX_UPLOAD_BYTES(self) -> int:  # noqa: N802 — свойства настроек в верхнем регистре
         """Максимальный размер файла в байтах."""
-        return int(self.max_upload_mb * 1024 * 1024)
+        return int(self.MAX_UPLOAD_MB * 1024 * 1024)
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+
+settings = Settings()

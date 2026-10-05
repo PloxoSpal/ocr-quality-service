@@ -27,12 +27,15 @@ OCR_team_developer_task/datatset/pdf/      # 20 PDF
 uv sync
 ```
 
+Скопируйте `.env.example` в `.env` в корне проекта и задайте настройки.
+Сервис читает `.env` при импорте `settings`; переменные окружения имеют приоритет.
+
 ## 3. Запуск
 
 ```bash
-make run                     # http://0.0.0.0:8000
+make run                     # http://127.0.0.1:8000
 # или
-uv run python -m ocr_quality --port 8000
+uv run python -m ocr_quality.main
 ```
 
 Документация API (Swagger): <http://127.0.0.1:8000/docs>.
@@ -45,7 +48,7 @@ make docker-build && make docker-run      # 4 CPU, 2 GiB, 4 воркера
 docker compose up --build
 ```
 
-> В контейнере Python видит все CPU хоста, а не лимит `--cpus`, поэтому `OCRQ_WORKERS` нужно задавать равным лимиту. В `docker-compose.yml` это уже сделано.
+> В контейнере Python видит все CPU хоста, а не лимит `--cpus`, поэтому `WORKERS` нужно задавать равным лимиту. В `docker-compose.yml` это уже сделано.
 
 ## 4. Проверка работы
 
@@ -110,7 +113,7 @@ make bench-http    # по HTTP: скрипт сам поднимает серв�
 
 uv run python scripts/benchmark.py http --concurrency 1 8 32 --requests 300
 uv run python scripts/benchmark.py http --pdf
-uv run python scripts/benchmark.py http --env OCRQ_MAX_REQUESTS=12    # перегрузка
+uv run python scripts/benchmark.py http --env MAX_REQUESTS=12    # перегрузка
 ```
 
 Скрипт сам печатает описание машины. Нагрузочный клиент работает на той же машине, поэтому перед замером лучше закрыть тяжёлые приложения. Между прогонами на ноутбуке возможен разброс 15–25%.
@@ -119,11 +122,11 @@ uv run python scripts/benchmark.py http --env OCRQ_MAX_REQUESTS=12    # пере
 
 | Переменная | По умолчанию | Что задаёт |
 |---|---|---|
-| `OCRQ_WORKERS` | число ядер | сколько процессов параллельно считают проверки |
-| `OCRQ_MAX_REQUESTS` | `4 × workers` | сколько запросов одновременно пускать в сервис; остальным 503 |
-| `OCRQ_REQUEST_TIMEOUT_S` | `120` | время на анализ одного запроса, иначе 504 |
-| `OCRQ_MAX_UPLOAD_MB` | `50` | максимальный размер файла, иначе 413 |
-| `OCRQ_LOG_LEVEL` | `INFO` | уровень логирования |
+| `WORKERS` | число ядер | сколько процессов параллельно считают проверки |
+| `MAX_REQUESTS` | `4 × workers` | сколько запросов одновременно пускать в сервис; остальным 503 |
+| `REQUEST_TIMEOUT_S` | `120` | время на анализ одного запроса, иначе 504 |
+| `MAX_UPLOAD_MB` | `50` | максимальный размер файла, иначе 413 |
+| `LOG_LEVEL` | `INFO` | уровень логирования |
 | `OCRQ_DATASET_DIR` | `OCR_team_developer_task/datatset` | путь к набору данных для тестов |
 
 Пороги проверок — константы в начале каждого файла `src/ocr_quality/checks/*.py`.
@@ -132,9 +135,9 @@ uv run python scripts/benchmark.py http --env OCRQ_MAX_REQUESTS=12    # пере
 
 | Симптом | Что делать |
 |---|---|
-| `503 overloaded` с `Retry-After: 1` | Сервис занят: внутри уже `OCRQ_MAX_REQUESTS` запросов. Клиенту нужно повторить запрос позже. Сервису — увеличить `OCRQ_WORKERS` или `OCRQ_MAX_REQUESTS`, либо добавить реплики |
-| `413 payload_too_large` | Файл больше `OCRQ_MAX_UPLOAD_MB`, картинка больше 60 Мп или в PDF больше 200 страниц |
-| `504 timeout` | Анализ дольше `OCRQ_REQUEST_TIMEOUT_S` (очень большой PDF) |
+| `503 overloaded` с `Retry-After: 1` | Сервис занят: внутри уже `MAX_REQUESTS` запросов. Клиенту нужно повторить запрос позже. Сервису — увеличить `WORKERS` или `MAX_REQUESTS`, либо добавить реплики |
+| `413 payload_too_large` | Файл больше `MAX_UPLOAD_MB`, картинка больше 60 Мп или в PDF больше 200 страниц |
+| `504 timeout` | Анализ дольше `REQUEST_TIMEOUT_S` (очень большой PDF) |
 | Первый запуск 1–3 с | Сервис заранее запускает процессы-воркеры, это один раз при старте |
 | Тесты на наборе данных `skipped` | Набор не найден: задайте `OCRQ_DATASET_DIR` |
 | `Address already in use` | Порт занят: `make run PORT=8001` |

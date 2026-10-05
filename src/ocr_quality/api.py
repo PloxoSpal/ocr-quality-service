@@ -1,5 +1,3 @@
-"""HTTP-эндпоинты: ``GET /checks``, ``POST /analyze``, ``GET /health``."""
-
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile

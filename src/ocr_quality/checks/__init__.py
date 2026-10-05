@@ -1,10 +1,3 @@
-"""Все проверки качества.
-
-Чтобы добавить проверку: создайте модуль с наследником ``Check`` и допишите его
-экземпляр в список ниже. Больше ничего менять не нужно - проверка появится в
-``GET /checks`` и станет доступна в ``POST /analyze``.
-"""
-
 from ocr_quality.checks.base import Check
 from ocr_quality.checks.blur import BlurCheck
 from ocr_quality.checks.contrast import ContrastCheck

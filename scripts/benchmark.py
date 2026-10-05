@@ -180,8 +180,8 @@ def run_http(concurrency: list[int], requests: int, pdf: bool, env: list[str]) -
     uploads = [encode_upload(name, data) for name, data in load_files(pdf)]
     port = 8765
     server = subprocess.Popen(
-        [sys.executable, "-m", "ocr_quality", "--port", str(port)],
-        env={**os.environ, "OCRQ_LOG_LEVEL": "WARNING", **dict(e.split("=", 1) for e in env)},
+        [sys.executable, "-m", "uvicorn", "ocr_quality.main:app", "--port", str(port)],
+        env={**os.environ, "LOG_LEVEL": "WARNING", **dict(e.split("=", 1) for e in env)},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -228,7 +228,7 @@ def main() -> None:
     parser.add_argument("--concurrency", type=int, nargs="+", default=[1, 2, 4, 8, 16, 32])
     parser.add_argument("--requests", type=int, default=200, help="запросов на уровень")
     parser.add_argument("--pdf", action="store_true", help="слать PDF вместо изображений")
-    parser.add_argument("--env", nargs="*", default=[], help="настройки сервиса, OCRQ_X=значение")
+    parser.add_argument("--env", nargs="*", default=[], help="настройки сервиса, WORKERS=значение")
     args = parser.parse_args()
 
     if args.mode == "local":
