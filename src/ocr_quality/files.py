@@ -18,6 +18,8 @@ Image.MAX_IMAGE_PIXELS = None  # лимит пикселей проверяем 
 
 @dataclass
 class ImageInfo:
+    """Заголовок изображения, прочитанный без декодирования пикселей."""
+
     format: str
     width: int
     height: int
@@ -25,10 +27,12 @@ class ImageInfo:
 
 
 def is_pdf(data: bytes) -> bool:
+    """Похож ли файл на PDF по сигнатуре в начале."""
     return b"%PDF-" in data[:1024]
 
 
 def read_image_info(data: bytes) -> ImageInfo:
+    """Прочитать формат и размер; неподдерживаемые и слишком большие файлы отклонить."""
     try:
         with Image.open(io.BytesIO(data)) as img:
             info = ImageInfo(
@@ -47,6 +51,7 @@ def read_image_info(data: bytes) -> ImageInfo:
 
 
 def check_pixel_limit(width: int, height: int) -> None:
+    """Отклонить картинку больше MAX_PIXELS."""
     if width * height > MAX_PIXELS:
         raise FileTooLargeError(
             f"Image is too large: {width}x{height} px exceeds {MAX_PIXELS} pixels"
@@ -54,6 +59,7 @@ def check_pixel_limit(width: int, height: int) -> None:
 
 
 def read_image(data: bytes) -> np.ndarray:
+    """Декодировать изображение в оттенки серого."""
     info = read_image_info(data)
 
     if info.has_alpha:
@@ -74,6 +80,7 @@ def read_image(data: bytes) -> np.ndarray:
 
 
 def open_pdf(data: bytes) -> pdfium.PdfDocument:
+    """Открыть PDF и проверить число страниц."""
     try:
         document = pdfium.PdfDocument(data)
     except pdfium.PdfiumError as exc:
@@ -90,8 +97,11 @@ def open_pdf(data: bytes) -> pdfium.PdfDocument:
 
 
 def read_pdf_page(document: pdfium.PdfDocument, index: int) -> np.ndarray:
-    # Скан (одна картинка на всю страницу) берём как есть, в родном разрешении: так
-    # быстрее и точнее. Остальные страницы рисуем в PDF_RENDER_DPI.
+    """Получить страницу PDF в оттенках серого.
+
+    Скан (одна картинка на всю страницу) берём как есть, в родном разрешении: так
+    быстрее и точнее. Остальные страницы рисуем в PDF_RENDER_DPI.
+    """
     try:
         page = document[index]
         scan = find_scan_image(page)
@@ -110,6 +120,7 @@ def read_pdf_page(document: pdfium.PdfDocument, index: int) -> np.ndarray:
 
 
 def find_scan_image(page: pdfium.PdfPage) -> pdfium.PdfImage | None:
+    """Вернуть картинку скана, если страница - это одна неповёрнутая картинка во весь лист."""
     if page.get_rotation() != 0:
         return None
     images = list(page.get_objects(filter=[pdfium.raw.FPDF_PAGEOBJ_IMAGE], max_depth=2))
@@ -128,7 +139,7 @@ def find_scan_image(page: pdfium.PdfPage) -> pdfium.PdfImage | None:
 
 
 def bitmap_to_gray(array: np.ndarray) -> np.ndarray:
-    # to_numpy() отдаёт память PDFium, поэтому нужна своя копия.
+    """Перевести растр PDFium в серый; копия нужна, так как to_numpy() отдаёт память PDFium."""
     if array.ndim == 2:
         return array.copy()
     code = cv2.COLOR_BGR2GRAY if array.shape[2] == 3 else cv2.COLOR_BGRA2GRAY

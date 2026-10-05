@@ -1,4 +1,5 @@
 import math
+from typing import override
 
 import cv2
 import numpy as np
@@ -7,10 +8,14 @@ from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
 from ocr_quality.page import Page, cut_text_tiles
 
 
-# У края с перепадом яркости C, размытого гауссианом ширины sigma, самый крутой градиент
-# равен C / (sigma * sqrt(2*pi)). По перепаду и градиенту в каждом текстовом тайле находим
-# sigma - она не зависит ни от контраста, ни от количества текста.
 class BlurCheck(Check):
+    """Ширина размытия краёв букв.
+
+    У края с перепадом яркости C, размытого гауссианом ширины sigma, самый крутой градиент
+    равен C / (sigma * sqrt(2*pi)). По перепаду и градиенту в каждом текстовом тайле
+    находим sigma - она не зависит ни от контраста, ни от количества текста.
+    """
+
     name = "blur"
     unit = "edge_sigma_px"
     critical = True
@@ -26,6 +31,7 @@ class BlurCheck(Check):
     MIN_TILE_CONTRAST = 25
     MIN_TILES = 3
 
+    @override
     def measure(self, page: Page) -> Measurement:
         if page.text_tiles.sum() < self.MIN_TILES:
             return not_applicable("blur: not enough text to judge sharpness")

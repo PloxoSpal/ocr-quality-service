@@ -12,6 +12,7 @@ from ocr_quality.services import AnalysisService
 
 
 def create_app() -> FastAPI:
+    """Собирает приложение: пул процессов на время работы и обработчик ошибок."""
     logging.basicConfig(
         level=settings.LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )

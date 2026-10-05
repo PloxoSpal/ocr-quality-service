@@ -6,6 +6,8 @@ CheckStatus = Literal["passed", "failed", "not_applicable", "error"]
 
 
 class CheckResult(BaseModel):
+    """Результат одной проверки."""
+
     passed: bool | None  # None - проверка неприменима или упала
     score: float | None
     status: CheckStatus
@@ -20,6 +22,8 @@ class CheckResult(BaseModel):
 
 
 class PageTimings(BaseModel):
+    """Время стадий анализа страницы, мс."""
+
     load_ms: float
     preprocess_ms: float
     checks_ms: float
@@ -27,6 +31,8 @@ class PageTimings(BaseModel):
 
 
 class PageResult(BaseModel):
+    """Результат анализа одной страницы."""
+
     page: int
     width: int
     height: int
@@ -39,6 +45,8 @@ class PageResult(BaseModel):
 
 
 class InputInfo(BaseModel):
+    """Что за файл пришёл."""
+
     type: Literal["image", "pdf"]
     format: str
     size_bytes: int
@@ -48,6 +56,8 @@ class InputInfo(BaseModel):
 
 
 class ImageAnalysis(BaseModel):
+    """Ответ /analyze для изображения."""
+
     input: InputInfo
     suitable_for_ocr: bool
     quality_score: float | None
@@ -58,6 +68,8 @@ class ImageAnalysis(BaseModel):
 
 
 class DocumentSummary(BaseModel):
+    """Сводка по страницам PDF."""
+
     page_count: int
     suitable_pages: list[int]
     problem_pages: list[int]
@@ -66,6 +78,8 @@ class DocumentSummary(BaseModel):
 
 
 class DocumentResult(BaseModel):
+    """Итог по всему PDF-документу."""
+
     suitable_for_ocr: bool
     quality_score: float | None
     issues: list[str]
@@ -73,6 +87,8 @@ class DocumentResult(BaseModel):
 
 
 class PdfAnalysis(BaseModel):
+    """Ответ /analyze для PDF."""
+
     input: InputInfo
     suitable_for_ocr: bool
     quality_score: float | None
@@ -83,10 +99,14 @@ class PdfAnalysis(BaseModel):
 
 
 class ChecksList(BaseModel):
+    """Ответ /checks."""
+
     checks: list[str]
 
 
 class Health(BaseModel):
+    """Ответ /health."""
+
     status: Literal["ok"] = "ok"
     workers: int
     requests_in_progress: int

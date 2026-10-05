@@ -23,12 +23,12 @@ SCORE_FLOOR = 0.1  # чтобы одна нулевая оценка не обн
 
 
 def init_worker() -> None:
-    # Воркеров уже столько же, сколько ядер, - свои потоки OpenCV только мешали бы.
+    """Настроить процесс пула: воркеров столько же, сколько ядер, потоки OpenCV не нужны."""
     cv2.setNumThreads(1)
 
 
 def analyze_file(data: bytes, check_names: list[str]) -> ImageAnalysis | PdfAnalysis:
-    # Выполняется в воркере. Тип файла определяем по содержимому, а не по имени.
+    """Проанализировать картинку или PDF; тип определяется по содержимому файла."""
     if is_pdf(data):
         pages = analyze_pdf(data, check_names)
         document = summarize_document(pages)
@@ -60,6 +60,7 @@ def analyze_file(data: bytes, check_names: list[str]) -> ImageAnalysis | PdfAnal
 
 
 def analyze_image(data: bytes, check_names: list[str]) -> PageResult:
+    """Проанализировать изображение как одну страницу."""
     started = time.perf_counter()
     gray = read_image(data)
     load_ms = (time.perf_counter() - started) * 1000
@@ -67,6 +68,7 @@ def analyze_image(data: bytes, check_names: list[str]) -> PageResult:
 
 
 def analyze_pdf(data: bytes, check_names: list[str]) -> list[PageResult]:
+    """Проанализировать каждую страницу PDF по очереди."""
     document = open_pdf(data)
     try:
         results = []
@@ -83,6 +85,7 @@ def analyze_pdf(data: bytes, check_names: list[str]) -> list[PageResult]:
 def analyze_page(
     gray: np.ndarray, check_names: list[str], page_number: int = 1, load_ms: float = 0.0
 ) -> PageResult:
+    """Найти текст на странице, выполнить проверки и посчитать итог."""
     page = prepare_page(gray)
 
     started = time.perf_counter()
@@ -110,6 +113,7 @@ def analyze_page(
 
 
 def score_page(results: dict[str, CheckResult]) -> tuple[bool, float | None, list[str]]:
+    """Вернуть (пригодна ли, quality_score, проблемы) по результатам проверок."""
     # Взвешенное геометрическое среднее: одно очень плохое свойство (например, сильное
     # размытие) портит OCR, как бы хороши ни были остальные.
     scored = [r for r in results.values() if r.score is not None]
@@ -133,7 +137,7 @@ def score_page(results: dict[str, CheckResult]) -> tuple[bool, float | None, lis
 
 
 def summarize_document(pages: list[PageResult]) -> DocumentResult:
-    # Страницы без текста (обложки, фото) в итоге документа не участвуют.
+    """Итог по документу; страницы без текста (обложки, фото) в нём не участвуют."""
     blank = [p.page for p in pages if p.text_detected is False]
     text_pages = [p for p in pages if p.text_detected is not False]
     suitable = [p.page for p in text_pages if p.suitable_for_ocr]

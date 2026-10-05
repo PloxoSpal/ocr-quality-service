@@ -25,5 +25,3 @@ htmlcov/
 /OCR_team_developer_task/
 /dataset/*/*
 !/dataset/*/.gitkeep
-
-# Сгенерированные отчёты

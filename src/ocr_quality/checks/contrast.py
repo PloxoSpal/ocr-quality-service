@@ -1,11 +1,13 @@
 import math
+from typing import override
 
 from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
 from ocr_quality.page import Page
 
 
-# Яркость штрихов текста против бумаги рядом с ними, только внутри текстовых областей.
 class ContrastCheck(Check):
+    """Разница яркости штрихов текста и бумаги рядом с ними внутри текстовых областей."""
+
     name = "contrast"
     unit = "ratio"
     critical = True
@@ -16,6 +18,7 @@ class ContrastCheck(Check):
     threshold = (LOW + HIGH) / 2
     MIN_CHARS = 15
 
+    @override
     def measure(self, page: Page) -> Measurement:
         if page.char_count < self.MIN_CHARS or math.isnan(page.ink_level):
             return not_applicable("contrast: no text to measure contrast on")

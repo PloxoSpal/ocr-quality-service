@@ -1,4 +1,5 @@
 import math
+from typing import override
 
 import cv2
 import numpy as np
@@ -7,9 +8,13 @@ from ocr_quality.checks.base import Check, Measurement, ramp
 from ocr_quality.page import Page
 
 
-# Пылинки вдали от текста и зернистость бумаги, итог - по худшей. Меряем только в области
-# документа: фактура стола на фото чека шумом не считается. Некритичная.
 class NoiseCheck(Check):
+    """Пылинки вдали от текста и зернистость бумаги, итог - по худшей.
+
+    Меряем только в области документа: фактура стола на фото чека шумом не считается.
+    Некритичная.
+    """
+
     name = "noise"
     unit = "specks_per_mpx"
     critical = False
@@ -23,6 +28,7 @@ class NoiseCheck(Check):
     HIGH_SIGMA = 12
     MAX_SPECK_AREA = 6
 
+    @override
     def measure(self, page: Page) -> Measurement:
         specks = self.specks_per_megapixel(page)
         sigma = self.grain_sigma(page)
@@ -40,7 +46,7 @@ class NoiseCheck(Check):
         )
 
     def specks_per_megapixel(self, page: Page) -> float:
-        # Точки над «i» и знаки препинания рядом с буквами пылинками не считаем.
+        """Пылинок на мегапиксель; точки над «i» и знаки препинания рядом с буквами не в счёт."""
         reach = max(3, round(page.char_height or 8.0))
         near_text = cv2.dilate(page.text_mask, np.ones((2 * reach + 1, 2 * reach + 1), np.uint8))
         free = (near_text == 0) & (page.document_mask > 0)
@@ -57,7 +63,7 @@ class NoiseCheck(Check):
 
     @staticmethod
     def grain_sigma(page: Page) -> float:
-        # Оценка шума по Immerkaer, только по пикселям бумаги, чтобы края букв её не завышали.
+        """Шум по Immerkaer, только по пикселям бумаги, чтобы края букв его не завышали."""
         kernel = np.array([[1, -2, 1], [-2, 4, -2], [1, -2, 1]], np.float32)
         response = np.abs(cv2.filter2D(page.gray.astype(np.float32), -1, kernel))
         paper = (page.paper_mask > 0) & (page.document_mask > 0)

@@ -1,13 +1,19 @@
+from typing import override
+
 import numpy as np
 
 from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
 from ocr_quality.page import Page
 
 
-# Ищем угол, при котором центры символов лучше всего собираются в строки: при верном угле
-# гистограмма их вертикальных координат состоит из острых пиков. Положительный угол -
-# против часовой стрелки. Критичная: по Tesseract уже 6-8 градусов сильно портят OCR.
 class SkewCheck(Check):
+    """Угол наклона строк; положительный - против часовой стрелки.
+
+    Ищем угол, при котором центры символов лучше всего собираются в строки: при верном
+    угле гистограмма их вертикальных координат состоит из острых пиков. Критичная:
+    по Tesseract уже 6-8 градусов сильно портят OCR.
+    """
+
     name = "skew"
     unit = "degrees"
     critical = True
@@ -21,6 +27,7 @@ class SkewCheck(Check):
     MIN_CONFIDENCE = 0.2
     MAX_POINTS = 4000  # для скорости
 
+    @override
     def measure(self, page: Page) -> Measurement:
         if page.char_count < self.MIN_CHARS:
             return not_applicable("skew: not enough text to estimate line direction")
@@ -54,7 +61,7 @@ class SkewCheck(Check):
 
 
 def line_sharpness(points: np.ndarray, angle: float, bin_size: float) -> float:
-    # Чем больше точек в одних корзинах, тем больше сумма квадратов их количеств.
+    """Насколько точки собираются в строки под углом angle: сумма квадратов заполнения корзин."""
     theta = np.deg2rad(angle)
     across = points[:, 1] * np.cos(theta) + points[:, 0] * np.sin(theta)
     bins = ((across - across.min()) / bin_size).astype(int)

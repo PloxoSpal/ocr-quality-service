@@ -1,9 +1,12 @@
+from typing import override
+
 from ocr_quality.checks.base import Check, Measurement, ramp
 from ocr_quality.page import Page
 
 
-# Считает символы, выстроившиеся в строки: пятна, фактура и рисунки в строки не складываются.
 class TextPresenceCheck(Check):
+    """Число символов, выстроившихся в строки: пятна, фактура и рисунки в строки не складываются."""
+
     name = "text_presence"
     unit = "characters"
     critical = True
@@ -13,6 +16,7 @@ class TextPresenceCheck(Check):
     ENOUGH = 60
     threshold = (FEW + ENOUGH) / 2
 
+    @override
     def measure(self, page: Page) -> Measurement:
         return Measurement(
             value=page.char_count,

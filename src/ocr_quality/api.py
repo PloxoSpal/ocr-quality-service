@@ -10,11 +10,13 @@ router = APIRouter()
 
 
 def get_service(request: Request) -> AnalysisService:
+    """Отдаёт сервис, созданный при старте приложения."""
     return request.app.state.service
 
 
 @router.get("/checks", response_model=ChecksList)
 async def list_checks() -> ChecksList:
+    """Список всех доступных проверок."""
     return ChecksList(checks=list(ALL_CHECKS))
 
 
@@ -26,6 +28,7 @@ async def analyze(
     ),
     service: AnalysisService = Depends(get_service),
 ) -> ImageAnalysis | PdfAnalysis:
+    """Проверить качество изображения или PDF для OCR."""
     # Размер известен до чтения: слишком большой файл не тащим в память.
     max_bytes = int(settings.MAX_UPLOAD_MB * 1024 * 1024)
     if file.size is not None and file.size > max_bytes:
@@ -38,6 +41,7 @@ async def analyze(
 
 @router.get("/health", response_model=Health)
 async def health(service: AnalysisService = Depends(get_service)) -> Health:
+    """Жив ли сервис и сколько запросов сейчас в работе."""
     return Health(
         workers=service.workers,
         requests_in_progress=service.requests_in_progress,

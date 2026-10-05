@@ -23,10 +23,14 @@ MIN_TEXT_SHARE_IN_TILE = 0.04
 DOCUMENT_MARGIN_TILES = 2
 
 
-# Всё, что нужно проверкам. Размеры - в пикселях уменьшенной gray; в пиксели
-# исходного файла переводит деление на scale.
 @dataclass
 class Page:
+    """Всё, что нужно проверкам; считается один раз на страницу.
+
+    Размеры - в пикселях уменьшенной gray; в пиксели исходного файла переводит деление
+    на scale.
+    """
+
     gray: np.ndarray
     scale: float
     original_width: int
@@ -53,6 +57,7 @@ class Page:
 
 
 def prepare_page(gray: np.ndarray) -> Page:
+    """Найти на странице чернила, символы, строки, текстовые тайлы и бумагу."""
     started = time.perf_counter()
     original_height, original_width = gray.shape
 
@@ -120,6 +125,8 @@ def prepare_page(gray: np.ndarray) -> Page:
 
 @dataclass
 class Text:
+    """Найденный текст: символы, выстроившиеся в строки."""
+
     mask: np.ndarray
     char_count: int
     centers: np.ndarray
@@ -130,7 +137,7 @@ class Text:
 def find_text(
     labels: np.ndarray, stats: np.ndarray, centers: np.ndarray, shape: tuple[int, ...]
 ) -> Text:
-    # Три фильтра отсеивают пыль, фактуру фона и картинки.
+    """Отобрать среди пятен символы; три фильтра отсеивают пыль, фактуру фона и картинки."""
     height, width = shape
     no_text = Text(
         mask=np.zeros(shape, np.uint8),
@@ -196,8 +203,11 @@ def find_text(
 
 
 def typical_char_height(heights: np.ndarray, areas: np.ndarray) -> float:
-    # Пик гистограммы log2(высоты), взвешенной по площади: так тысячи пылинок
-    # (фактура стола на фото чека) не перевешивают настоящие символы.
+    """Типичная высота символа: пик гистограммы log2(высоты), взвешенной по площади.
+
+    Взвешивание по площади не даёт тысячам пылинок (фактура стола на фото чека)
+    перевесить настоящие символы.
+    """
     log_h = np.log2(heights)
     step = 0.125
     edges = np.arange(log_h.min() - step / 2, log_h.max() + 2 * step, step)
@@ -208,8 +218,11 @@ def typical_char_height(heights: np.ndarray, areas: np.ndarray) -> float:
 
 
 def single_glyph_height(boxes: np.ndarray) -> float:
-    # При низком разрешении буквы слипаются в широкие пятна высотой с самую высокую
-    # букву. Пятна не шире своей высоты - почти всегда одиночные буквы.
+    """Высота одиночной буквы по рамкам символов [x, y, ширина, высота].
+
+    При низком разрешении буквы слипаются в широкие пятна высотой с самую высокую
+    букву. Пятна не шире своей высоты - почти всегда одиночные буквы.
+    """
     widths, heights = boxes[:, 2], boxes[:, 3]
     narrow = heights[widths <= heights]
     if len(narrow) >= max(20, 0.2 * len(heights)):
@@ -218,6 +231,7 @@ def single_glyph_height(boxes: np.ndarray) -> float:
 
 
 def find_text_tiles(text_mask: np.ndarray, size: int) -> np.ndarray:
+    """Таблица тайлов size x size: True, где текста достаточно."""
     padded = pad_to_tiles(text_mask, size)
     rows, cols = padded.shape[0] // size, padded.shape[1] // size
     share = padded.reshape(rows, size, cols, size).astype(np.float32).mean(axis=(1, 3)) / 255
@@ -225,17 +239,20 @@ def find_text_tiles(text_mask: np.ndarray, size: int) -> np.ndarray:
 
 
 def tiles_to_mask(tiles: np.ndarray, size: int, shape: tuple[int, ...]) -> np.ndarray:
+    """Растянуть таблицу тайлов обратно в маску размера shape."""
     full = np.kron(tiles.astype(np.uint8), np.ones((size, size), np.uint8)) * 255
     return np.ascontiguousarray(full[: shape[0], : shape[1]])
 
 
 def pad_to_tiles(image: np.ndarray, size: int) -> np.ndarray:
+    """Дополнить картинку краевыми пикселями до целого числа тайлов."""
     pad_bottom = -image.shape[0] % size
     pad_right = -image.shape[1] % size
     return np.pad(image, ((0, pad_bottom), (0, pad_right)), mode="edge")
 
 
 def cut_text_tiles(page: Page, image: np.ndarray) -> list[np.ndarray]:
+    """Вырезать из image куски, совпадающие с текстовыми тайлами страницы."""
     size = page.tile_size
     padded = pad_to_tiles(image, size)
     return [

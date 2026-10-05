@@ -9,6 +9,8 @@ from ocr_quality.schemas import CheckResult, CheckStatus
 
 @dataclass
 class Measurement:
+    """Что намерила проверка; превращается в CheckResult в Check.run."""
+
     value: float | None
     score: float | None  # None - проверку нельзя выполнить на этой странице
     problem: str = ""
@@ -16,15 +18,18 @@ class Measurement:
 
 
 def not_applicable(reason: str, **details: Any) -> Measurement:
+    """Результат «проверку нельзя выполнить на этой странице»."""
     return Measurement(value=None, score=None, problem=reason, details=details)
 
 
 def ramp(value: float, bad: float, good: float) -> float:
-    # При bad - 0, при good - 1, между ними линейно; граница пройдено/нет (0.5) посередине.
+    """Оценка 0..1: при bad - 0, при good - 1, между ними линейно; граница 0.5 посередине."""
     return min(1.0, max(0.0, (value - bad) / (good - bad)))
 
 
 class Check(ABC):
+    """Базовый класс проверки: наследник задаёт имя, параметры и метод measure."""
+
     name: str
     unit: str
     critical: bool = True  # провал делает страницу непригодной
@@ -32,9 +37,11 @@ class Check(ABC):
     threshold: float | None = None
 
     @abstractmethod
-    def measure(self, page: Page) -> Measurement: ...
+    def measure(self, page: Page) -> Measurement:
+        """Измерить свойство страницы и оценить его от 0 до 1."""
 
     def run(self, page: Page) -> CheckResult:
+        """Выполнить проверку и оформить результат; ошибка внутри не роняет анализ."""
         started = time.perf_counter()
         status: CheckStatus
         try:

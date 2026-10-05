@@ -1,12 +1,16 @@
 import math
+from typing import override
 
 from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
 from ocr_quality.page import Page
 
 
-# Абсолютная яркость: не слишком ли тёмная съёмка и не выцвели ли штрихи.
-# Некритичная - только снижает итоговую оценку.
 class ExposureCheck(Check):
+    """Не слишком ли тёмная съёмка и не выцвели ли штрихи.
+
+    Некритичная - только снижает итоговую оценку.
+    """
+
     name = "exposure"
     unit = "gray_level"
     critical = False
@@ -20,6 +24,7 @@ class ExposureCheck(Check):
     DARK_INK = 195
     MIN_CHARS = 15
 
+    @override
     def measure(self, page: Page) -> Measurement:
         if page.char_count < self.MIN_CHARS or math.isnan(page.ink_level):
             return not_applicable("exposure: no text to measure exposure on")

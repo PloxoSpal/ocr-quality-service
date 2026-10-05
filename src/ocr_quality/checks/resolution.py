@@ -1,10 +1,15 @@
+from typing import override
+
 from ocr_quality.checks.base import Check, Measurement, not_applicable, ramp
 from ocr_quality.page import Page
 
 
-# DPI в файлах обычно нет, а для OCR важно, сколько пикселей на букву,
-# поэтому меряем высоту символа в пикселях исходного файла.
 class ResolutionCheck(Check):
+    """Высота символа в пикселях исходного файла.
+
+    DPI в файлах обычно нет, а для OCR важно, сколько пикселей приходится на букву.
+    """
+
     name = "resolution"
     unit = "px"
     critical = True
@@ -16,6 +21,7 @@ class ResolutionCheck(Check):
     MIN_IMAGE_SIDE = 256
     MIN_CHARS = 15
 
+    @override
     def measure(self, page: Page) -> Measurement:
         shorter_side = min(page.original_width, page.original_height)
         if shorter_side < self.MIN_IMAGE_SIDE:

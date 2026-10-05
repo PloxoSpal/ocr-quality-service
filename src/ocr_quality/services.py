@@ -13,6 +13,8 @@ from ocr_quality.schemas import ImageAnalysis, PdfAnalysis
 
 
 class AnalysisService:
+    """Выполняет анализ в пуле процессов и не пускает больше request_limit запросов."""
+
     def __init__(self, workers: int, request_limit: int) -> None:
         self.workers = workers
         self.request_limit = request_limit
@@ -20,13 +22,15 @@ class AnalysisService:
         self.pool = create_pool(workers)
 
     async def warm_up(self) -> None:
-        # Запускаем процессы заранее, чтобы первый запрос не ждал их старта.
+        """Запустить процессы заранее, чтобы первый запрос не ждал их старта."""
         await asyncio.gather(*(self.run_in_pool(time.sleep, 0.1) for _ in range(self.workers)))
 
     def shutdown(self) -> None:
+        """Остановить пул, отменив запросы в очереди."""
         self.pool.shutdown(cancel_futures=True)
 
     async def analyze(self, data: bytes, checks: str | None) -> ImageAnalysis | PdfAnalysis:
+        """Проанализировать файл; checks - имена проверок через запятую."""
         started = time.perf_counter()
         check_names = parse_check_names(checks)
 
@@ -42,6 +46,7 @@ class AnalysisService:
         return result
 
     async def run_in_pool(self, function: Callable[..., Any], *args: Any) -> Any:
+        """Выполнить функцию в пуле; сломанный пул пересоздаётся."""
         loop = asyncio.get_running_loop()
         try:
             return await loop.run_in_executor(self.pool, function, *args)
@@ -52,7 +57,7 @@ class AnalysisService:
 
 
 def create_pool(workers: int) -> ProcessPoolExecutor:
-    # spawn одинаково работает на macOS и Linux и не копирует состояние родителя.
+    """Создать пул процессов; spawn одинаково работает на macOS и Linux."""
     return ProcessPoolExecutor(
         max_workers=workers,
         mp_context=multiprocessing.get_context("spawn"),
@@ -61,6 +66,7 @@ def create_pool(workers: int) -> ProcessPoolExecutor:
 
 
 def parse_check_names(checks: str | None) -> list[str]:
+    """Разобрать строку "blur,skew" в список; пустая строка - все проверки."""
     names = [name.strip() for name in (checks or "").split(",") if name.strip()]
     if not names:
         return list(ALL_CHECKS)
